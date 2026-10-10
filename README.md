@@ -4,6 +4,6 @@ A static, public methodology and **synthetic-data** simulator for EyeCare EFS hy
 
 - `index.html`, `styles.css`, `app.js`: responsive research dashboard, nominal 100-point weights, scenario demonstration, and highlighted synthetic screen-change graph.
 - `RESEARCH_PIPELINE.md`: proposed consent, authentication, retention, validation and Android upload contract.
-- `docs/PROPOSED_20261010_research_schema.sql`: unexecuted migration proposal requiring security approval and RLS tests.
+- `docs/PROPOSED_20261010_research_schema.sql`: unexecuted owner-only schema proposal requiring security approval and RLS tests. Retention is a separate optional decision in `docs/OPTIONAL_RETENTION.md`.
 
 The Android source and algorithm details are in the separate `D:\Neurolens2` project (`ALGORITHM_0.5.md`). This website has not been wired to Supabase because Auth, RLS, researcher read rights, and deletion policy require explicit approval. Public GitHub/Vercel must never host real personal observations.

@@ -1,5 +1,6 @@
--- PROPOSAL ONLY. Do not apply until Auth, RLS, researcher access and retention
--- decisions have been reviewed and approved for the named Supabase project.
+-- PROPOSAL ONLY. Do not apply until Auth, owner-only RLS, consent and
+-- account recovery/withdrawal behavior have been reviewed and approved.
+-- No retention interval or automatic deletion is included in this proposal.
 -- No service_role or other secret belongs in this repository or an Android APK.
 
 create table if not exists public.research_consent (
@@ -10,7 +11,7 @@ create table if not exists public.research_consent (
 );
 alter table public.research_consent enable row level security;
 revoke all on public.research_consent from anon, authenticated;
-grant select, delete on public.research_consent to authenticated;
+grant select on public.research_consent to authenticated;
 grant insert (owner_id, consent_version) on public.research_consent to authenticated;
 grant update (consent_version, withdrawn_at) on public.research_consent to authenticated;
 create policy consent_owner_read on public.research_consent for select to authenticated
@@ -19,9 +20,6 @@ create policy consent_owner_insert on public.research_consent for insert to auth
   with check (owner_id = (select auth.uid()));
 create policy consent_owner_update on public.research_consent for update to authenticated
   using (owner_id = (select auth.uid())) with check (owner_id = (select auth.uid()));
-create policy consent_owner_delete on public.research_consent for delete to authenticated
-  using (owner_id = (select auth.uid()));
-
 create table if not exists public.research_observations (
   id uuid primary key,
   owner_id uuid not null references auth.users(id) on delete cascade,
@@ -29,7 +27,6 @@ create table if not exists public.research_observations (
   device_pseudonym uuid not null,
   observed_at timestamptz not null,
   received_at timestamptz not null default now(),
-  expires_at timestamptz not null default (now() + interval '180 days'),
   consent_version text not null check (length(consent_version) between 1 and 40),
   algorithm_version text not null check (algorithm_version ~ '^[a-z0-9._-]{1,50}$'),
   score smallint check (score between 0 and 100),
@@ -66,15 +63,14 @@ create table if not exists public.research_observations (
     (case when get_byte(decode(md5(owner_id::text), 'hex'), 0) % 5 = 0
       then 'validation' else 'calibration' end) stored,
   unique (owner_id, report_id),
-  check (observed_at <= received_at + interval '1 day'),
-  check (expires_at <= received_at + interval '180 days')
+  check (observed_at <= received_at + interval '1 day')
 );
 create index if not exists research_observations_owner_time
   on public.research_observations (owner_id, observed_at desc);
 alter table public.research_observations enable row level security;
 revoke all on public.research_observations from anon, authenticated;
 grant select, delete on public.research_observations to authenticated;
--- Server timestamps, retention and the generated split cannot be supplied by a client.
+-- Server receipt time and the generated split cannot be supplied by a client.
 grant insert (id, owner_id, report_id, device_pseudonym, observed_at,
   consent_version, algorithm_version, score, confidence, screen_score,
   environment_score, posture_score, usage_score, eyes_score, screen_quality,
@@ -85,7 +81,7 @@ grant insert (id, owner_id, report_id, device_pseudonym, observed_at,
   environment_missing_code, posture_missing_code, usage_missing_code,
   eyes_missing_code) on public.research_observations to authenticated;
 create policy observation_owner_read on public.research_observations for select to authenticated
-  using (owner_id = (select auth.uid()) and expires_at > now());
+  using (owner_id = (select auth.uid()));
 create policy observation_owner_insert on public.research_observations for insert to authenticated
   with check (owner_id = (select auth.uid()) and
     exists (select 1 from public.research_consent c
@@ -97,4 +93,4 @@ create policy observation_owner_delete on public.research_observations for delet
 
 -- A researcher-wide read policy is intentionally omitted. It needs an approved
 -- identity, dedicated authorization tests, and an access audit. No public read.
--- Physical removal at expires_at requires an approved scheduled cleanup job.
+-- Retention and physical deletion, if desired, require a separate decision.
