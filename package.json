@@ -1,0 +1,12 @@
+{
+  "name": "eyecare-research-site",
+  "version": "0.5.2",
+  "private": true,
+  "scripts": {
+    "check": "node --check app.js && node --check dashboard-core.js && node --check dashboard.js",
+    "test": "node --test tests/*.test.js"
+  },
+  "dependencies": {
+    "qrcode-generator": "2.0.4"
+  }
+}

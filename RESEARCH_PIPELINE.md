@@ -1,29 +1,31 @@
-# Research data pipeline proposal — approval required before activation
+# Research data pipeline — 0.5.2 alpha
 
-The public site is currently a synthetic-data methodology demo. It does not read or upload real Supabase records. The Android 0.5.0 alpha likewise does not send personal measurements to this project. Its transport accepts an access token but has no Auth sign-in, token persistence or token-refresh implementation. The supplied publishable key identifies a client application; by itself it neither authenticates a person nor authorizes private row access. No service-role key or password should enter source control, APKs, logs, or chat.
+The public home page is a synthetic-data methodology simulator. The separate [private dashboard](dashboard.html) signs its browser into Supabase anonymously and reads only observations authorized by a time-limited phone-to-browser grant. It has no public observation feed.
 
-## Proposed access model
+## Android export
 
-1. Enable Supabase anonymous Auth for a consenting Android installation. Its authenticated `auth.uid()` owns its rows. Store its session in app-private storage. Because anonymous identity is lost on uninstall/sign-out, explain that limitation before consent or provide a separately approved account-linking flow.
-2. Review `docs/PROPOSED_20261010_research_schema.sql` and apply it manually only after approval. The proposal is outside the migrations directory to prevent automatic application. It revokes `anon` table access, enables RLS and grants owner-only read and deletion; insertion also requires active matching consent. Anonymous **Auth users** use the `authenticated` role and therefore receive those owner-only rights. There is no public read or unauthenticated write. Neither the proposal nor this site adds a researcher-wide read policy.
-3. For a researcher dashboard, separately approve an identified researcher login, a narrowly scoped read authorization mechanism, and RLS tests. Only then add authenticated site access. No real records should appear on a public route or in static assets.
-4. On consent withdrawal, stop future uploads, delete the owner's rows, and remove any on-device queued copy once server deletion is confirmed. Handle unavailable network with a bounded retry queue and stable report IDs for idempotent inserts. No retention interval or scheduled deletion is included in the minimum schema; the separately optional [retention proposal](docs/OPTIONAL_RETENTION.md) must not be applied without a new decision.
+- Research collection is optional and requires explicit consent. The Android app signs in anonymously, protects its Auth session with Android Keystore, and uploads aggregate fields only when a report is exported.
+- The pending outbox uses stable report IDs, retries after offline/transient failures, and handles a duplicate insert by checking that the same owner already has the report. Observation rows are insert-only.
+- The optional subjective fatigue NRS is requested before export so that it can accompany the immutable observation. Missing values stay null; they are never treated as zero.
+- Withdrawal stops future uploads and clears pending local reports. It does not delete existing server records. The user must explicitly consent again before resuming.
+- Uninstalling the app loses the anonymous owner identity and its ability to recover those rows or revoke browser access. Reinstalling creates a new owner.
 
-## Minimum record and data dictionary
+## Browser pairing
 
-The SQL schema intentionally uses named numeric columns rather than arbitrary JSON payloads so that an Android client cannot place image bytes, screen text, application names, account names, or free-form notes into a research field. Required fields are a random observation UUID, authenticated owner UUID, stable report UUID for deduplication, random device pseudonym UUID, observation time, consent version and algorithm version. The optional numeric fields are 0–100 score and five domain scores, five 0–1 domain quality values, screen-change fraction, ambient lux, continuous and daily use minutes, blink rate, eye-open mean, continuous dark/bright exposure minutes, **calibrated** distance only when genuinely available, and a 0–10 optional subjective fatigue response. `null` means not measured; it is not zero.
+1. The dashboard signs in anonymously and presents its Auth UUID in a QR code. The QR contains only that UUID, never a token, report, or observation.
+2. The phone scans or accepts the UUID and asks for explicit approval. It writes a single owner-controlled grant, valid for at most 30 days. Replacing the browser or revoking the grant ends the earlier browser's read permission.
+3. The browser queries its own valid grant, then the owner's observations under RLS. The browser has no observation write or delete permission. An offline revoke is queued on the phone and only takes effect on the server after a successful retry; the UI states this delay.
 
-`split` is determined by the owner ID so one participant's records cannot appear in both calibration and held-out validation sets. That is a data-management partition, not model performance evidence. Timestamps and pseudonyms are still personal data and require consent and restricted access. Do not upload source images, videos, full gaze traces, app identities, screen text, or notification content.
+The database migration `20261010133126_create_owner_only_research_storage` created `research_consent` and `research_observations`. A separate approved migration created `research_browser_grants`. RLS restricts writes to the owner, browser reads to an active grant, and unauthenticated `anon` access to none. The files under `docs/` are historical proposals, not deployment instructions.
 
-## Android workflow to activate after approval
+## Data and interpretation
 
-- Show a separate, optional research-upload consent screen with schema/version and exact fields; on-device scoring works without it. Start Auth and remote insertion only after consent.
-- Insert each sanitized report once using its immutable report ID. A local outbox should retain failed requests, back off on transient errors, and show pending/sent/failed state. If offline, continue on-device operation.
-- Upload a newly supplied subjective fatigue response as an approved update operation or a separate response row; avoid silently changing immutable observations. The current proposed schema grants no UPDATE, so a response can only be included before first insert until that choice is resolved.
-- Implement and test withdrawal, server delete, local queue removal, token expiry, duplicate response, clock drift, and authorization failures with synthetic records before live use.
+The observation schema accepts scores, five domain scores and quality values, confidence, NRS, a short algorithm version, estimates/missing codes, and bounded aggregate measurements. It excludes camera/screen originals, screen text, application names, full gaze traces, account names, and free-form notes.
 
-## Concrete approvals and verification still needed
+The dashboard plots observed score against time, highlights the peak, shows paired score/NRS records only when both exist in the same report, and reconstructs domain contributions using nominal weights and stored quality. Exact adjustment components and raw feature counts are absent from the research schema, so reconstructed contributions are labeled as approximate. Missing values are shown as missing. Records tagged `synthetic-test-` stay out of real-data charts and counts. These exploratory charts are not clinical validation.
 
-Approval is needed to enable anonymous Auth and apply the owner-only RLS/grant proposal. No researcher identity or access policy has been chosen, so researcher access stays absent. Decide whether responses should be inserted with a report or updated later, how an anonymous participant can recover or withdraw after uninstall, and what data retention period is acceptable before any live collection. Run signed-out/owner/other-user read/write/delete tests against a non-production project first, then the named project with synthetic data. No automatic model retraining or production rollout follows from record collection.
+## Validation
 
-Relevant official guidance: [Supabase anonymous Auth](https://supabase.com/docs/guides/auth/auth-anonymous), [RLS](https://supabase.com/docs/guides/database/postgres/row-level-security), [securing the Data API](https://supabase.com/docs/guides/api/securing-your-api), [Vercel Git deployment](https://vercel.com/docs/git/vercel-for-github).
+The project includes `npm run check` and `npm test` for the dashboard code. The Android project builds unit, instrumentation, debug APK, and lint targets separately. A synthetic-only API exercise checked owner/grant isolation, browser read, browser write denial, maximum grant duration, and revoke. It intentionally retains a tagged synthetic observation. No personal health record was used in that test.
+
+The Android source is in the separate `D:\Neurolens2` project. No service-role secret belongs in either public source or the APK.

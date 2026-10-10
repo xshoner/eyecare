@@ -1,9 +1,9 @@
 # EyeCare Research
 
-A static, public methodology and **synthetic-data** simulator for EyeCare EFS hypothesis 0.5. Open `index.html` locally or deploy the repository's root as a static site. There are no remote data calls, credentials, analytics, or real-user records in this version.
+This static site has a public [synthetic methodology simulator](index.html) and a separate [paired research dashboard](dashboard.html). The dashboard signs in anonymously, displays a QR containing its browser Auth UUID, and reads a phone owner's observations only while that owner has approved an active grant. No tokens or observations are embedded in the site build.
 
-- `index.html`, `styles.css`, `app.js`: responsive research dashboard, nominal 100-point weights, scenario demonstration, and highlighted synthetic screen-change graph.
-- `RESEARCH_PIPELINE.md`: proposed consent, authentication, retention, validation and Android upload contract.
-- `docs/PROPOSED_20261010_research_schema.sql`: unexecuted owner-only schema proposal requiring security approval and RLS tests. Retention is a separate optional decision in `docs/OPTIONAL_RETENTION.md`.
+The dashboard shows a score timeline and peak, approximate quality-weighted domain contributions, same-report score/NRS pairs, and missing-data and algorithm-version summaries. API test rows marked `synthetic-test-` are identified separately and excluded from real-data summaries. Scores are exploratory, not clinical advice.
 
-The Android source and algorithm details are in the separate `D:\Neurolens2` project (`ALGORITHM_0.5.md`). This website has not been wired to Supabase because Auth, RLS, researcher read rights, and deletion policy require explicit approval. Public GitHub/Vercel must never host real personal observations.
+Run `npm run check` and `npm test` to verify the JavaScript. The root can be deployed as a static site. The pinned QR generator is vendored at `vendor/qrcode.js`, so the page does not need a third-party runtime CDN.
+
+[RESEARCH_PIPELINE.md](RESEARCH_PIPELINE.md) documents Auth, grants, consent, upload, and limitations. Historical SQL proposals in `docs/` are not migrations to rerun. The Android app source and APK are in the separate `D:\Neurolens2` project.
