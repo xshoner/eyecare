@@ -26,7 +26,7 @@
     { id: 'eye_open_mean', label: '평균 눈 개방도', note: '개인 기준선과 신호 품질이 서버에 없어 원 점수 재계산 불가.' },
     { id: 'dark_stimulus_minutes', label: '어두운 환경의 화면 자극', note: '저장된 추정 집계. 0.7은 조도와 상대 화면 밝기로 계산한 어두움 위험을 환경 영역에 반영하며, 이 항목을 별도로 가산하지 않습니다.' },
     { id: 'calibrated_distance_cm', label: '보정된 거리', note: '기존 연구 계약의 보정 거리 필드. 0.7 앱은 30 cm 사용자 기준 보정을 제공하지만 현재 업로드에는 이 필드를 채우지 않습니다. 새 추정 거리와 혼용하지 않습니다.' },
-    { id: 'distance_estimate_cm', label: '추정 거리', note: '0.7 앱 내부 신호이며 현재 연구 DB 스키마에는 없어 웹에서 계산할 수 없습니다.' }
+    { id: 'distance_estimate_cm', label: '추정 거리', note: '새 연구용 집계 필드. 0.7.2 이후 동의한 새 보고서에서 추정 cm와 품질·coverage·보정 여부를 확인할 수 있습니다. 기존 행의 빈 값은 소급 측정하지 않습니다.' }
   ]);
   const base = () => definitions.filter(item => item.type === 'domain')
     .map(item => ({ id: item.id, enabled: true, weight: item.weight }));

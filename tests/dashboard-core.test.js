@@ -7,13 +7,46 @@ test('synthetic records never enter real charts or NRS pairs', () => {
     { algorithm_version: 'synthetic-test-0.5.2', score: 90, subjective_fatigue_nrs: 10 },
     { algorithm_version: 'efs-hypothesis-0.5', score: 40, subjective_fatigue_nrs: null },
     { algorithm_version: 'efs-hypothesis-0.5', score: null, subjective_fatigue_nrs: 8 },
-    { algorithm_version: 'efs-hypothesis-0.5', score: 55, subjective_fatigue_nrs: 7 }
+    { algorithm_version: 'efs-hypothesis-0.5', score: 55, subjective_fatigue_nrs: 7,
+      screen_quality: 1, usage_quality: 1 }
   ];
   const { real, synthetic } = A.partition(rows);
   assert.equal(real.length, 3);
   assert.equal(synthetic.length, 1);
   assert.deepEqual(A.paired(real).map(row => row.score), [55]);
   assert.equal(A.peak(real).score, 55);
+});
+
+test('stored low-evidence scores remain present but cannot become trend or NRS points', () => {
+  const weak = { algorithm_version: 'efs-hypothesis-0.7', score: 88,
+    screen_quality: .5, environment_quality: .5, subjective_fatigue_nrs: 9 };
+  const adequate = { algorithm_version: 'efs-hypothesis-0.7', score: 44,
+    screen_quality: 1, environment_quality: .5, subjective_fatigue_nrs: 5 };
+  assert.equal(A.comparableScore(weak), false); // 13 + 11 = 24 available weight
+  assert.equal(A.comparableScore(adequate), true);
+  assert.deepEqual(A.paired([weak, adequate]), [adequate]);
+  assert.equal(A.peak([weak, adequate]), adequate);
+  assert.equal(weak.score, 88);
+});
+
+test('distance uses valid minutes once and does not multiply composite quality by coverage', () => {
+  const rows = [
+    { distance_estimate_cm: 24, distance_estimate_quality: .4, distance_coverage: .5,
+      distance_valid_minutes: 5, distance_window_minutes: 10, distance_calibrated: false },
+    { distance_estimate_cm: 44, distance_estimate_quality: .7, distance_coverage: .1,
+      distance_valid_minutes: 1, distance_window_minutes: 10, distance_calibrated: true },
+    { distance_estimate_cm: null, distance_estimate_quality: null, distance_coverage: 0,
+      distance_valid_minutes: 0, distance_window_minutes: 10, distance_calibrated: null },
+    { distance_estimate_cm: 20, distance_estimate_quality: .9, distance_valid_minutes: null,
+      distance_window_minutes: null, distance_calibrated: true }
+  ];
+  const result = A.distanceSummary(rows);
+  assert.equal(result.typicalCm, 24);
+  assert.equal(result.coverage, .2);
+  assert.equal(result.observedMinutes, 6);
+  assert.equal(result.measured.length, 2);
+  assert.equal(result.measured[0].distance_estimate_quality, .4);
+  assert.equal(result.calibrated, false);
 });
 
 test('reconstructed contributions respect missingness and effective quality weights', () => {

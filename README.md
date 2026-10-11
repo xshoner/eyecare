@@ -6,4 +6,4 @@ The dashboard shows a score timeline and peak, approximate quality-weighted doma
 
 Run `npm run check` and `npm test` to verify the JavaScript. The root can be deployed as a static site. The pinned QR generator is vendored at `vendor/qrcode.js`, so the page does not need a third-party runtime CDN.
 
-[RESEARCH_PIPELINE.md](RESEARCH_PIPELINE.md) documents Auth, grants, consent, upload, and limitations. [ENGINE_0.7.md](ENGINE_0.7.md) documents the new user-selected weights and local distance estimate. Historical SQL proposals in `docs/` are not migrations to rerun. The Android app source and APK are in the separate `D:\Neurolens2` project.
+[RESEARCH_PIPELINE.md](RESEARCH_PIPELINE.md) documents Auth, grants, consent, upload, and limitations. [ENGINE_0.7.md](ENGINE_0.7.md) documents the new user-selected weights and aggregate distance estimate. Historical SQL proposals in `docs/` are not migrations to rerun. The Android app source and APK are in the separate `D:\Neurolens2` project.

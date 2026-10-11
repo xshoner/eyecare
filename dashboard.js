@@ -112,7 +112,7 @@
     const root = $('timeline');
     root.replaceChildren();
     const dated = rows.filter(row => !Number.isNaN(Date.parse(row.observed_at)));
-    const scored = dated.filter(row => A.isScore(row.score));
+    const scored = dated.filter(A.comparableScore);
     if (!scored.length) {
       root.append(textNode('p', '점수가 있는 실제 관측이 아직 없습니다.', 'empty-inline'));
       $('peak-label').textContent = '';
@@ -139,7 +139,7 @@
       segment = [];
     }
     dated.forEach(row => {
-      if (!A.isScore(row.score)) { flush(); return; }
+      if (!A.comparableScore(row)) { flush(); return; }
       segment.push({ x: xFor(Date.parse(row.observed_at)), y: bottom - row.score / 100 * (bottom - top) });
     });
     flush();
@@ -156,6 +156,53 @@
     });
     root.append(svg);
     $('peak-label').textContent = `최대 ${highest.score}점 · ${dateLabel(highest.observed_at)}`;
+  }
+  function drawDistance(rows) {
+    const root = $('distance-timeline'); root.replaceChildren();
+    const summary = A.distanceSummary(rows);
+    $('distance-typical').textContent = summary.typicalCm === null ? '측정 근거 부족'
+      : `주 거리 약 ${Math.round(summary.typicalCm)} cm`;
+    const latest = [...summary.measured].sort((a, b) => Date.parse(b.observed_at) - Date.parse(a.observed_at))[0];
+    $('distance-quality').textContent = summary.windowMinutes === 0
+      ? '서버에 거리 집계가 있는 새 보고서가 아직 없습니다. 이전 보고서의 거리를 0으로 채우지 않습니다.'
+      : `유효 관측 ${summary.observedMinutes.toFixed(1)} / ${summary.windowMinutes.toFixed(1)}분 · 시간 coverage ${Math.round(summary.coverage * 100)}% · 거리 보고서 ${summary.measured.length}개` +
+        (latest ? ` · 최근 결합 품질 ${Math.round(latest.distance_estimate_quality * 100)}% · ${latest.distance_calibrated ? '사용자 기준 보정' : '미보정 추정'}` : ' · 유효 거리 부족');
+    const points = rows.filter(row => !Number.isNaN(Date.parse(row.observed_at)) &&
+      typeof row.distance_window_minutes === 'number').slice(-100);
+    if (!summary.measured.length || !points.length) {
+      root.append(textNode('p', '표시할 거리 추정이 아직 없습니다.', 'empty-inline')); return;
+    }
+    const svg = basePlot(), left = 60, right = 790, top = 20, bottom = 218;
+    const y = cm => bottom - (cm - 15) / 65 * (bottom - top);
+    for (const cm of [15, 30, 50, 80]) {
+      svg.append(svgNode('line', { x1: left, x2: right, y1: y(cm), y2: y(cm),
+        class: cm === 30 ? 'distance-guide' : 'grid-line' }));
+      svg.append(svgText(left - 12, y(cm) + 4, String(cm), 'axis-label', 'end'));
+    }
+    const times = points.map(row => Date.parse(row.observed_at));
+    const min = Math.min(...times), max = Math.max(...times);
+    const x = time => min === max ? (left + right) / 2 : left + (time - min) / (max - min) * (right - left);
+    (min === max ? [min] : [min, (min + max) / 2, max]).forEach(t =>
+      svg.append(svgText(x(t), 247, dateLabel(t), 'axis-label')));
+    svg.append(svgText(18, 14, 'cm', 'axis-title', 'start'));
+    let segment = [];
+    function flush() {
+      if (segment.length > 1) svg.append(svgNode('polyline', {
+        points: segment.map(p => `${p.x},${p.y}`).join(' '), class: 'distance-line'
+      }));
+      segment = [];
+    }
+    points.forEach(row => {
+      const valid = summary.measured.includes(row);
+      if (!valid) { flush(); return; }
+      const cx = x(Date.parse(row.observed_at)), cy = y(row.distance_estimate_cm);
+      segment.push({ x: cx, y: cy });
+      const dot = svgNode('circle', { cx, cy, r: 5, class: 'distance-dot' });
+      const title = svgNode('title');
+      title.textContent = `${dateLabel(row.observed_at)} · 약 ${Math.round(row.distance_estimate_cm)} cm · 결합 품질 ${Math.round(row.distance_estimate_quality * 100)}% · 시간 coverage ${Math.round((row.distance_coverage ?? 0) * 100)}% · ${row.distance_calibrated ? '보정' : '미보정'}`;
+      dot.append(title); svg.append(dot);
+    });
+    flush(); root.append(svg);
   }
   function drawNrs(rows) {
     const pairs = A.paired(rows);
@@ -187,7 +234,7 @@
   }
   function renderContributions(rows) {
     const root = $('contributions'); root.replaceChildren();
-    const last = [...rows].reverse().find(row => A.isScore(row.score));
+    const last = [...rows].reverse().find(A.comparableScore);
     if (!last) { root.append(textNode('p', '기여도를 재구성할 실제 점수가 없습니다.', 'empty-inline')); return; }
     for (const item of A.contributions(last)) {
       const line = document.createElement('div'); line.className = 'contribution';
@@ -214,12 +261,13 @@
     root.append(textNode('p', `알고리즘 버전: ${[...versions].map(([name, n]) => `${name} ${n}건`).join(' · ')}`));
     root.append(textNode('p', `신뢰도: ${[...confidence].map(([name, n]) => `${name} ${n}건`).join(' · ')}`));
     root.append(textNode('p', `영역 점수 결측 ${missing}개 · 추정 표시 필드 ${estimated}개 (관측 전체 기준)`));
+    root.append(textNode('p', `비교 가능한 점수 ${rows.filter(A.comparableScore).length}개 · 저장 점수 ${rows.filter(row => A.isScore(row.score)).length}개. 0.7/0.5는 가용 비중 30% 이상만 차트·NRS·최고점에 사용합니다.`));
   }
   function renderTable(rows) {
     const body = $('observations-body'); body.replaceChildren();
     for (const row of [...rows].reverse().slice(0, 100)) {
       const tr = document.createElement('tr');
-      for (const value of [dateLabel(row.observed_at), A.isScore(row.score) ? `${row.score}/100` : '결측',
+      for (const value of [dateLabel(row.observed_at), A.isScore(row.score) ? `${row.score}/100${A.comparableScore(row) ? '' : ' · 근거 부족'}` : '결측',
         Number.isInteger(row.subjective_fatigue_nrs) ? `${row.subjective_fatigue_nrs}/10` : '미응답',
         row.confidence || '정보 없음', row.algorithm_version || '정보 없음']) tr.append(textNode('td', value));
       body.append(tr);
@@ -230,14 +278,14 @@
     const pairs = A.paired(real);
     $('empty-state').hidden = real.length !== 0;
     const cards = [
-      ['표식 없는 관측 후보', `${real.length}건`], ['점수 관측', `${real.filter(row => A.isScore(row.score)).length}건`],
+      ['표식 없는 관측 후보', `${real.length}건`], ['점수 관측', `${real.filter(A.comparableScore).length}건`],
       ['NRS 짝지음', `${pairs.length}건`], ['연결 만료', new Date(expiresAt).toLocaleDateString('ko-KR')]
     ];
     $('summary').replaceChildren(...cards.map(([label, value]) => {
       const item = document.createElement('div'); item.className = 'summary-card';
       item.append(textNode('span', label), textNode('strong', value)); return item;
     }));
-    drawTimeline(real); drawNrs(real); renderContributions(real); renderQuality(real); renderTable(real);
+    drawTimeline(real); drawDistance(real); drawNrs(real); renderContributions(real); renderQuality(real); renderTable(real);
     $('synthetic-panel').hidden = synthetic.length === 0;
     $('synthetic-count').textContent = `${synthetic.length}건 · 실제 분석에서 제외`;
     if (!editor) editor = window.EyeCareAlgorithmEditor.mount($('algorithm-root'), { rows: real, mode: 'private' });
@@ -247,6 +295,8 @@
     if (!canonicalUuid(ownerId)) throw new Error('Invalid owner ID');
     const columns = ['id','report_id','observed_at','algorithm_version','score','confidence','subjective_fatigue_nrs',
       'estimated_fields','screen_change','continuous_minutes',
+      'distance_estimate_cm','distance_estimate_quality','distance_coverage',
+      'distance_calibrated','distance_valid_minutes','distance_window_minutes',
       ...A.domains.flatMap(d => [`${d.id}_score`,`${d.id}_quality`,`${d.id}_missing_code`])].join(',');
     const rows = [];
     for (let offset = 0; offset < 5000; offset += 500) {

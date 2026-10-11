@@ -14,6 +14,42 @@
   const isSynthetic = row => String(row.algorithm_version || '').startsWith('synthetic-test-');
   const isScore = value => typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 100;
   const isNrs = value => Number.isInteger(value) && value >= 0 && value <= 10;
+  const finite = (value, low, high) => typeof value === 'number' && Number.isFinite(value) &&
+    value >= low && value <= high;
+  const scoreWeights = version => version === 'efs-hypothesis-0.7' ? [26, 22, 8, 18, 26]
+    : version === 'efs-hypothesis-0.5' ? [20, 10, 15, 20, 35] : null;
+
+  // Mirrors the app's >=30% available-weight gate. Older rows with no quality evidence
+  // retain their stored scores in the table, but cannot support a trend comparison.
+  function comparableScore(row) {
+    const weights = scoreWeights(row.algorithm_version);
+    if (!isScore(row.score) || !weights) return false;
+    const available = domains.reduce((sum, domain, i) => {
+      const quality = row[`${domain.id}_quality`];
+      return sum + (finite(quality, 0, 1) ? weights[i] * quality : 0);
+    }, 0);
+    return Math.round(available) >= 30;
+  }
+
+  function distanceSummary(rows) {
+    const windows = rows.filter(row => finite(row.distance_window_minutes, 0, 120) &&
+      finite(row.distance_valid_minutes, 0, row.distance_window_minutes));
+    const observedMinutes = windows.reduce((sum, row) => sum + row.distance_valid_minutes, 0);
+    const windowMinutes = windows.reduce((sum, row) => sum + row.distance_window_minutes, 0);
+    const measured = windows.filter(row => finite(row.distance_estimate_cm, 15, 80) &&
+      finite(row.distance_estimate_quality, 0, 1) && row.distance_valid_minutes > 0 &&
+      typeof row.distance_calibrated === 'boolean');
+    const totalWeight = measured.reduce((sum, row) => sum + row.distance_valid_minutes, 0);
+    let typicalCm = null;
+    if (totalWeight > 0) {
+      let accumulated = 0;
+      typicalCm = [...measured].sort((a, b) => a.distance_estimate_cm - b.distance_estimate_cm)
+        .find(row => (accumulated += row.distance_valid_minutes) * 2 >= totalWeight).distance_estimate_cm;
+    }
+    return { typicalCm, measured, observedMinutes, windowMinutes,
+      coverage: windowMinutes > 0 ? Math.min(1, observedMinutes / windowMinutes) : null,
+      calibrated: measured.length ? measured.every(row => row.distance_calibrated) : null };
+  }
 
   function partition(rows) {
     return {
@@ -23,7 +59,7 @@
   }
 
   function paired(rows) {
-    return rows.filter(row => isScore(row.score) && isNrs(row.subjective_fatigue_nrs));
+    return rows.filter(row => comparableScore(row) && isNrs(row.subjective_fatigue_nrs));
   }
 
   function contributions(row) {
@@ -44,7 +80,7 @@
   }
 
   function peak(rows) {
-    return rows.filter(row => isScore(row.score)).reduce((best, row) =>
+    return rows.filter(comparableScore).reduce((best, row) =>
       !best || row.score > best.score ? row : best, null);
   }
 
@@ -55,5 +91,6 @@
     return 'waiting';
   }
 
-  return { domains, isSynthetic, partition, paired, contributions, peak, grantState, isScore };
+  return { domains, isSynthetic, partition, paired, contributions, peak, grantState,
+    isScore, comparableScore, distanceSummary };
 });

@@ -1,4 +1,4 @@
-# Research data pipeline — 0.7.0 alpha
+# Research data pipeline — 0.7.2 alpha
 
 The public home page is a synthetic-data methodology simulator. The separate [private dashboard](dashboard.html) signs its browser into Supabase anonymously and reads only observations authorized by a time-limited phone-to-browser grant. It has no public observation feed.
 
@@ -24,7 +24,7 @@ The observation schema accepts scores, five domain scores and quality values, co
 
 The dashboard plots observed score against time, highlights the peak, shows paired score/NRS records only when both exist in the same report, and reconstructs domain contributions using nominal weights and stored quality. Exact adjustment components and raw feature counts are absent from the research schema, so reconstructed contributions are labeled as approximate. Missing values are shown as missing. Records tagged `synthetic-test-` stay out of candidate charts and counts. Untagged rows have not been independently proven to originate from real phone measurements. These exploratory charts are not clinical validation.
 
-The [algorithm editor](algorithm.html) is a browser-only what-if calculator over synthetic examples, also available with paired candidate rows in the dashboard. It saves versioned weight settings in browser storage and can export their JSON. It does not update the database or phone algorithm. The 0.7 app uses user-selected `26/22/8/18/26` weights and local distance exposure; earlier 0.5 rows retain their historical `20/10/15/20/35` reconstruction. The web cannot reproduce 0.7 distance from the current research schema. Scarce and provenance-unverified NRS labels were not used to fit a new score. See [ENGINE_0.7.md](ENGINE_0.7.md) for the formula, camera assumptions, and validation limits.
+The [algorithm editor](algorithm.html) is a browser-only what-if calculator over synthetic examples, also available with paired candidate rows in the dashboard. It saves versioned weight settings in browser storage and can export their JSON. It does not update the database or phone algorithm. The 0.7 app uses user-selected `26/22/8/18/26` weights and local distance exposure; earlier 0.5 rows retain their historical `20/10/15/20/35` reconstruction. From app 0.7.2, the paired dashboard reads six new aggregate distance fields for new observations; older immutable rows stay null. It cannot reconstruct distance for historical rows. Scarce and provenance-unverified NRS labels were not used to fit a new score. See [ENGINE_0.7.md](ENGINE_0.7.md) for the formula, camera assumptions, and validation limits.
 
 ## Validation
 
