@@ -44,7 +44,7 @@
       <div class="section-head"><div><span class="kicker">02 / YOUR OBSERVATIONS</span><h2>시간에 따른 관측</h2></div><button id="refresh-data" type="button">새로고침</button></div>
       <div id="empty-state" class="card empty" hidden>연결은 완료됐지만 아직 자동 동기화된 표식 없는 연구 집계가 없습니다. 휴대폰 앱의 설정에서 전송·대기 상태를 확인해 주세요.</div>
       <div id="summary" class="summary"></div>
-      <section class="card personal-card" aria-labelledby="personal-title"><h3 id="personal-title">내 응답으로 맞춘 참고 점수</h3><p id="personal-summary"></p><p class="fine">같은 산식 버전의 비교 가능한 이전 기록과 서버에 먼저 도착한 응답 5개 이상만 사용합니다. 중앙값 차이를 최대 12점까지 완만히 적용하며, 원래 점수나 연구 관측은 바꾸지 않습니다. 의료 진단이나 검증된 예측 모델이 아닙니다.</p></section>
+      <section class="card personal-card" aria-labelledby="personal-title"><h3 id="personal-title">내 응답으로 맞춘 참고 점수</h3><label><input id="personal-toggle" type="checkbox" checked> 이 브라우저에서 개인 참고 점수 표시</label><p id="personal-summary"></p><p id="personal-validation" class="fine"></p><p class="fine">같은 산식 버전의 비교 가능한 이전 기록과 서버에 먼저 도착한 응답 5개 이상만 사용합니다. 중앙값 차이를 최대 12점까지 완만히 적용하며, 원래 점수나 연구 관측은 바꾸지 않습니다. 앱과 브라우저의 표시 선택은 서로 동기화되지 않습니다. 본인 체감과의 일치도이며 의료 진단 성능이 아닙니다.</p></section>
       <section class="card chart-card" aria-labelledby="timeline-title">
         <div class="chart-head"><div><h3 id="timeline-title">점수 시계열</h3><p>결측 점수는 선으로 이어 추정하지 않습니다. 색과 표본 정보로 신뢰도를 함께 확인하세요.</p></div><strong id="peak-label"></strong></div>
         <div id="timeline" class="chart" role="img" aria-label="관측 시간에 따른 점수 그래프"></div>

@@ -108,6 +108,42 @@
     return { score: Math.max(0, Math.min(100, target.score + offset)), samples: offsets.length, offset };
   }
 
+  // Forward-only held-out comparison on the latest algorithm version. A report's own
+  // response is never available to its prediction, and later corrections do not rewrite outcomes.
+  function validation(rows, responses) {
+    const chronological = [...rows].filter(row => Number.isFinite(Date.parse(row.observed_at)))
+      .sort((a, b) => Date.parse(a.observed_at) - Date.parse(b.observed_at) ||
+        String(a.report_id).localeCompare(String(b.report_id)));
+    const version = chronological.at(-1)?.algorithm_version || null;
+    const candidates = chronological.filter(row => row.algorithm_version === version && comparableScore(row));
+    const first = new Map();
+    for (const answer of responses) {
+      if (!isNrs(answer.subjective_fatigue_nrs) || !Number.isFinite(Date.parse(answer.received_at))) continue;
+      const old = first.get(answer.report_id);
+      if (!old || answer.received_at < old.received_at ||
+        (answer.received_at === old.received_at && answer.id < old.id)) first.set(answer.report_id, answer);
+    }
+    let eligibleLabels = 0, evaluated = 0, raw = 0, personal = 0;
+    let firstEvaluatedAt = null, lastEvaluatedAt = null;
+    for (const row of candidates) {
+      const answer = first.get(row.report_id);
+      if (!answer) continue;
+      const reportAt = Date.parse(row.observed_at), answeredAt = Date.parse(answer.answered_at);
+      if (!Number.isFinite(answeredAt) || answeredAt < reportAt || answeredAt - reportAt > 86400000) continue;
+      eligibleLabels++;
+      const predicted = personalized(row, candidates, responses).score;
+      if (predicted === null) continue;
+      raw += Math.abs(row.score - answer.subjective_fatigue_nrs * 10);
+      personal += Math.abs(predicted - answer.subjective_fatigue_nrs * 10);
+      evaluated++;
+      if (!firstEvaluatedAt) firstEvaluatedAt = row.observed_at;
+      lastEvaluatedAt = row.observed_at;
+    }
+    return { version, sameVersionReports: candidates.length, eligibleLabels, evaluated,
+      rawMae: evaluated ? raw / evaluated : null, personalMae: evaluated ? personal / evaluated : null,
+      firstEvaluatedAt, lastEvaluatedAt, sufficientEvidence: evaluated >= 5 };
+  }
+
   function contributions(row) {
     const historical = row.algorithm_version !== 'efs-hypothesis-0.7';
     const old = [20, 10, 15, 20, 35];
@@ -137,6 +173,7 @@
     return 'waiting';
   }
 
-  return { domains, isSynthetic, partition, paired, attachResponses, personalized, contributions, peak, grantState,
+  return { domains, isSynthetic, partition, paired, attachResponses, personalized, validation,
+    contributions, peak, grantState,
     isScore, comparableScore, distanceSummary };
 });

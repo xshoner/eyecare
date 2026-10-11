@@ -105,3 +105,23 @@ test('personal reference uses only prior, comparable, same-version received answ
     answered_at: '2026-10-11T08:00:00Z', received_at: '2026-10-11T08:00:01Z' };
   assert.equal(A.personalized(target, [...rows, target], [...events, revisedAfterTarget]).score, 60);
 });
+
+test('forward validation uses held-out first receipts and reports missing evidence', () => {
+  const quality = { algorithm_version: 'efs-hypothesis-0.7', screen_quality: 1, environment_quality: 1 };
+  const rows = Array.from({ length: 10 }, (_, i) => ({ ...quality, report_id: `r-${i}`,
+    score: 40, observed_at: `2026-10-${String(i + 1).padStart(2, '0')}T08:00:00Z` }));
+  const responses = rows.map((row, i) => ({ id: `a-${i}`, report_id: row.report_id,
+    subjective_fatigue_nrs: 7, answered_at: `2026-10-${String(i + 1).padStart(2, '0')}T08:10:00Z`,
+    received_at: `2026-10-${String(i + 1).padStart(2, '0')}T08:11:00Z` }));
+  const result = A.validation(rows, responses);
+  assert.equal(result.sameVersionReports, 10);
+  assert.equal(result.eligibleLabels, 10);
+  assert.equal(result.evaluated, 5);
+  assert.equal(result.rawMae, 30);
+  assert.ok(result.personalMae < result.rawMae);
+  assert.equal(result.sufficientEvidence, true);
+  const correction = { ...responses[0], id: 'later', subjective_fatigue_nrs: 0,
+    received_at: '2026-10-12T08:00:00Z' };
+  assert.deepEqual(A.validation(rows, [...responses, correction]), result);
+  assert.equal(A.validation(rows, []).rawMae, null);
+});

@@ -7,6 +7,8 @@
   const $ = id => document.getElementById(id);
   let working = false;
   let editor = null;
+  let lastRendered = null;
+  let showPersonal = true;
 
   function canonicalUuid(value) {
     return typeof value === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
@@ -250,18 +252,21 @@
       const tr = document.createElement('tr');
       const personal = A.personalized(row, rows, responses);
       for (const value of [dateLabel(row.observed_at), A.isScore(row.score) ? `${row.score}/100${A.comparableScore(row) ? '' : ' · 근거 부족'}` : '결측',
-        personal.score === null ? `대기 (${personal.samples}/5)` : `${personal.score}/100 · 이전 ${personal.samples}개`,
+        !showPersonal ? '표시 끔 · 원점수 유지' : personal.score === null
+          ? `대기 (${personal.samples}/5)` : `${personal.score}/100 · 이전 ${personal.samples}개`,
         Number.isInteger(row.subjective_fatigue_nrs) ? `${row.subjective_fatigue_nrs}/10${row.subjective_source === 'response' ? ' · 최신' : ' · 이전 방식'}` : '미응답',
         row.confidence || '정보 없음', row.algorithm_version || '정보 없음']) tr.append(textNode('td', value));
       body.append(tr);
     }
   }
   function renderData(allRows, responses, expiresAt) {
+    lastRendered = { allRows, responses, expiresAt };
     const joined = A.attachResponses(allRows, responses);
     const { real, synthetic } = A.partition(joined);
     const pairs = A.paired(real);
     const newest = [...real].reverse().find(A.comparableScore);
     const personal = newest ? A.personalized(newest, real, responses) : null;
+    const validation = A.validation(real, responses);
     $('empty-state').hidden = real.length !== 0;
     const cards = [
       ['표식 없는 관측 후보', `${real.length}건`], ['점수 관측', `${real.filter(A.comparableScore).length}건`],
@@ -271,10 +276,18 @@
       const item = document.createElement('div'); item.className = 'summary-card';
       item.append(textNode('span', label), textNode('strong', value)); return item;
     }));
-    $('personal-summary').textContent = newest ? personal.score === null
+    $('personal-summary').textContent = !showPersonal
+      ? '개인 참고 점수 표시를 껐습니다. 원점수 해석과 원자료는 그대로 유지됩니다.'
+      : newest ? personal.score === null
       ? `최근 원점수 ${newest.score}/100 · 개인 기준 참고값은 이전의 유효 응답 5개부터 계산합니다 (현재 ${personal.samples}개).`
       : `최근 원점수 ${newest.score}/100 · 개인 기준 참고 ${personal.score}/100 · 이전 응답 ${personal.samples}개만 사용했습니다.`
       : '비교할 수 있는 점수가 아직 없습니다.';
+    const change = validation.rawMae === null ? null : validation.personalMae - validation.rawMae;
+    $('personal-validation').textContent = `같은 산식 ${validation.version || '없음'} · 비교 가능 ${validation.sameVersionReports}건 · 적격 응답 ${validation.eligibleLabels}건 · 과거 응답만 사용한 순차 검증 ${validation.evaluated}쌍` +
+      (validation.firstEvaluatedAt ? ` · 기간 ${dateLabel(validation.firstEvaluatedAt)} ~ ${dateLabel(validation.lastEvaluatedAt)}` : '') +
+      (change === null ? ' · 오차 미수집' : ` · NRS×10 대비 평균 절대 차이 원점수 ${validation.rawMae.toFixed(1)} / 개인 참고 ${validation.personalMae.toFixed(1)}점` +
+        (change > .05 ? ` · 차이 ${change.toFixed(1)}점 증가 (개선 없음)` : change < -.05 ? ` · 차이 ${(-change).toFixed(1)}점 감소` : ' · 차이 변화 없음')) +
+      (validation.sufficientEvidence ? ' · 본인 체감과의 일치도이며 임상 정확도가 아닙니다.' : ' · 표본 부족: 보정 시작 조건과 성능 입증은 다릅니다.');
     drawTimeline(real); drawDistance(real); drawNrs(real); renderContributions(real); renderQuality(real); renderTable(real, responses);
     $('synthetic-panel').hidden = synthetic.length === 0;
     $('synthetic-count').textContent = `${synthetic.length}건 · 실제 분석에서 제외`;
@@ -359,6 +372,10 @@
     }
   }
   $('check-pair').addEventListener('click', sync);
+  $('personal-toggle').addEventListener('change', event => {
+    showPersonal = event.target.checked;
+    if (lastRendered) renderData(lastRendered.allRows, lastRendered.responses, lastRendered.expiresAt);
+  });
   $('refresh-data').addEventListener('click', sync);
   window.addEventListener('online', sync);
   window.addEventListener('storage', event => { if (event.key === window.EyeCareBrowserSession.AUTH_KEY) sync(); });
