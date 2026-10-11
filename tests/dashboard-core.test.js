@@ -38,12 +38,14 @@ test('distance uses valid minutes once and does not multiply composite quality b
     { distance_estimate_cm: null, distance_estimate_quality: null, distance_coverage: 0,
       distance_valid_minutes: 0, distance_window_minutes: 10, distance_calibrated: null },
     { distance_estimate_cm: 20, distance_estimate_quality: .9, distance_valid_minutes: null,
-      distance_window_minutes: null, distance_calibrated: true }
+      distance_window_minutes: null, distance_calibrated: true },
+    { distance_estimate_cm: 19, distance_estimate_quality: 0, distance_valid_minutes: 2,
+      distance_window_minutes: 10, distance_calibrated: true }
   ];
   const result = A.distanceSummary(rows);
   assert.equal(result.typicalCm, 24);
   assert.equal(result.coverage, .2);
-  assert.equal(result.observedMinutes, 6);
+  assert.equal(result.observedMinutes, 8);
   assert.equal(result.measured.length, 2);
   assert.equal(result.measured[0].distance_estimate_quality, .4);
   assert.equal(result.calibrated, false);

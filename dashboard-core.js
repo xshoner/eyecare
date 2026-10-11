@@ -37,7 +37,8 @@
     const observedMinutes = windows.reduce((sum, row) => sum + row.distance_valid_minutes, 0);
     const windowMinutes = windows.reduce((sum, row) => sum + row.distance_window_minutes, 0);
     const measured = windows.filter(row => finite(row.distance_estimate_cm, 15, 80) &&
-      finite(row.distance_estimate_quality, 0, 1) && row.distance_valid_minutes > 0 &&
+      finite(row.distance_estimate_quality, 0, 1) && row.distance_estimate_quality > 0 &&
+      row.distance_valid_minutes > 0 &&
       typeof row.distance_calibrated === 'boolean');
     const totalWeight = measured.reduce((sum, row) => sum + row.distance_valid_minutes, 0);
     let typicalCm = null;
