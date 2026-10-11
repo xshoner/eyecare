@@ -2,12 +2,10 @@
   'use strict';
   const BASE = 'https://fdwmhfruvdyrxidwuvqx.supabase.co';
   const KEY = 'sb_publishable_23y3Jc2Jj1Ko5FiKChB1oA_9sriwmby';
-  const AUTH_KEY = 'eyecare_browser_auth_v1';
   const GRANT_KEY = 'eyecare_browser_grant_v1';
   const A = window.EyeCareAnalysis;
   const $ = id => document.getElementById(id);
   let working = false;
-  let authMemory = null;
   let editor = null;
 
   function canonicalUuid(value) {
@@ -37,30 +35,10 @@
     const raw = await response.text();
     return raw ? JSON.parse(raw) : null;
   }
-  async function ensureSession(force = false) {
-    const old = authMemory || stored(AUTH_KEY);
-    if (old && !force && old.expires_at_ms > Date.now() + 60_000 && canonicalUuid(old.user_id)) return old;
-    let result;
-    if (old && old.refresh_token) {
-      try {
-        result = await request('POST', '/auth/v1/token?grant_type=refresh_token', { refresh_token: old.refresh_token });
-      } catch (error) {
-        if (error.status !== 400 && error.status !== 401) throw error;
-        localStorage.removeItem(AUTH_KEY);
-        authMemory = null;
-      }
-    }
-    if (!result) result = await request('POST', '/auth/v1/signup', { data: {}, gotrue_meta_security: {} });
-    if (!canonicalUuid(result?.user?.id) || !result.access_token || !result.refresh_token) throw new Error('Invalid Auth session');
-    if (old && result.user.id !== old.user_id && authMemory) throw new Error('Auth identity changed');
-    const fresh = {
-      user_id: result.user.id, access_token: result.access_token, refresh_token: result.refresh_token,
-      expires_at_ms: Date.now() + Number(result.expires_in) * 1000
-    };
-    authMemory = fresh;
-    persist(AUTH_KEY, fresh); // Refresh tokens rotate; save the replacement before further requests.
-    return fresh;
-  }
+  const browserSession = window.EyeCareBrowserSession.create({
+    request, storage: localStorage, locks: navigator.locks
+  });
+  const ensureSession = browserSession.ensure;
   async function rest(path) {
     let session = await ensureSession();
     try { return await request('GET', path, undefined, session.access_token); }
@@ -71,8 +49,10 @@
     }
   }
   function setStatus(state, message) {
-    const labels = { checking: '연결 확인 중', waiting: '연결 대기', linked: '연결됨', expired: '만료됨',
-      revoked: '연결 해제됨', offline: '오프라인', error: '오류' };
+    const labels = { checking: '연결 확인 중', waiting: '연결 대기', linked: '연결됨',
+      expired: '연결 만료', revoked: '연결 철회', identity_changed: '브라우저 ID 불일치',
+      session_recovery_needed: '세션 복구 필요', storage_unavailable: '저장소 사용 불가',
+      offline: '네트워크 오류', error: '서버 오류' };
     $('connection-state').textContent = labels[state] || state;
     $('connection-state').dataset.state = state;
     $('status-message').textContent = message;
@@ -84,6 +64,7 @@
     code.make();
     $('pair-qr').innerHTML = code.createSvgTag({ cellSize: 5, margin: 8, scalable: true });
     $('browser-id').textContent = id.toLowerCase();
+    $('current-browser-id').textContent = id.toLowerCase();
   }
   function textNode(tag, value, className) {
     const node = document.createElement(tag);
@@ -307,23 +288,28 @@
     return rows;
   }
   async function sync() {
-    if (working) return;
+    if (working) { setStatus('checking', '연결 확인이 진행 중입니다. 잠시 기다려 주세요.'); return; }
     working = true;
     $('check-pair').disabled = true; $('refresh-data').disabled = true;
+    $('check-pair').textContent = '확인 중…';
     try {
       setStatus('checking', '연결 상태를 확인하고 있습니다.');
       const session = await ensureSession();
       renderQr(session.user_id);
+      $('current-browser-id').textContent = session.user_id;
       const grants = await rest(`/rest/v1/research_browser_grants?browser_id=eq.${session.user_id}&select=owner_id,browser_id,expires_at,revoked_at`);
       const grant = grants[0] || null;
       const prior = stored(GRANT_KEY);
-      const state = A.grantState(prior?.browser_id === session.user_id ? prior : null, grant);
+      const state = grant ? A.grantState(prior, grant)
+        : prior?.browser_id && prior.browser_id !== session.user_id ? 'identity_changed'
+          : A.grantState(prior?.browser_id === session.user_id ? prior : null, null);
       $('pair-panel').hidden = state === 'linked';
       $('analysis').hidden = state !== 'linked';
       if (state !== 'linked') {
-        const message = state === 'expired' ? '30일 연결 기간이 끝났습니다. 휴대폰에서 다시 승인해 주세요.'
-          : state === 'revoked' ? '휴대폰에서 연결이 해제되었거나 다른 브라우저로 교체됐습니다.'
-            : '휴대폰 앱에서 QR을 스캔하고 승인하면 기존·향후 자동 동기화된 연구용 집계를 읽습니다.';
+        const message = state === 'expired' ? '이 브라우저의 30일 연결이 만료됐습니다. 휴대폰에서 현재 웹 ID를 다시 연결해 주세요.'
+          : state === 'revoked' ? '이 브라우저의 연결이 철회됐습니다. 휴대폰에서 현재 웹 ID를 다시 연결해 주세요.'
+            : state === 'identity_changed' ? '휴대폰이 연결한 이전 웹 ID와 지금 보이는 ID가 다릅니다. 휴대폰의 웹 연결 메뉴에서 현재 ID를 다시 승인해 주세요.'
+              : '휴대폰의 웹 연결 메뉴에서 현재 웹 ID의 QR을 스캔하고 승인해 주세요. 승인 후 자동으로 갱신됩니다.';
         setStatus(state, message);
         return;
       }
@@ -332,17 +318,30 @@
       renderData(rows, grant.expires_at);
       setStatus('linked', rows.length ? '이 브라우저에 승인된 연구 집계만 표시합니다.' : '연결됐습니다. 아직 자동 동기화된 기록이 없습니다.');
     } catch (error) {
-      setStatus(error.status ? 'error' : 'offline', error.status
-        ? `서버 응답 ${error.status}. 잠시 후 다시 확인해 주세요.`
-        : '서버에 연결할 수 없습니다. 네트워크를 확인한 뒤 다시 시도해 주세요.');
+      $('analysis').hidden = true;
+      if (error.code === 'session_recovery_needed' || error.code === 'identity_mismatch') {
+        $('pair-panel').hidden = true;
+        try { $('current-browser-id').textContent = browserSession.saved()?.user_id || '확인 불가'; }
+        catch (_) { $('current-browser-id').textContent = '확인 불가'; }
+        setStatus('session_recovery_needed', '기존 웹 ID를 보존했습니다. 세션을 복구할 수 없어 새 계정을 자동 생성하지 않았습니다. 같은 브라우저의 저장소·쿠키 설정을 확인해 주세요.');
+      } else if (error.code === 'storage_unavailable') {
+        $('pair-panel').hidden = true;
+        setStatus('storage_unavailable', '브라우저 저장소를 사용할 수 없어 연결 ID를 안전하게 유지할 수 없습니다. 사이트 저장소 설정을 확인해 주세요.');
+      } else {
+        setStatus(error.status ? 'error' : 'offline', error.status
+          ? '서버 응답 ' + error.status + '. 연결을 확인하지 못했습니다. 다시 시도해 주세요.'
+          : '네트워크 연결을 확인하지 못했습니다. 온라인 상태에서 다시 시도해 주세요.');
+      }
     } finally {
       working = false;
       $('check-pair').disabled = false; $('refresh-data').disabled = false;
+      $('check-pair').textContent = '연결 다시 확인';
     }
   }
   $('check-pair').addEventListener('click', sync);
   $('refresh-data').addEventListener('click', sync);
   window.addEventListener('online', sync);
+  window.addEventListener('storage', event => { if (event.key === window.EyeCareBrowserSession.AUTH_KEY) sync(); });
   document.addEventListener('visibilitychange', () => { if (!document.hidden) sync(); });
   setInterval(() => { if (!document.hidden) sync(); }, 15000);
   sync();

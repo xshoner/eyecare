@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="./algorithm.css">
   <script defer src="./vendor/qrcode.js"></script>
   <script defer src="./dashboard-core.js"></script>
+  <script defer src="./browser-session.js"></script>
   <script defer src="./algorithm-core.js"></script>
   <script defer src="./algorithm-editor.js"></script>
   <script defer src="./dashboard.js"></script>
@@ -25,6 +26,7 @@
       <h1>내 연구 기록</h1>
       <p>휴대폰에서 자동 동기화한 연구용 집계를 이 브라우저에서 살펴봅니다. 합성 표식은 별도로 분리합니다. 표식이 없는 과거 검증 행의 출처가 확인되기 전에는 이를 학습용 실측으로 간주하지 않습니다.</p>
       <div class="status-row"><strong id="connection-state" class="state">연결 확인 중</strong><span id="status-message" role="status" aria-live="polite">브라우저 계정을 준비하고 있습니다.</span></div>
+      <p class="browser-identity">현재 웹 브라우저 ID: <code id="current-browser-id">확인 중</code> · 휴대폰에 저장된 연결 ID와 일치해야 합니다.</p>
     </section>
 
     <section id="pair-panel" class="card pair" hidden>
