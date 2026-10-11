@@ -7,20 +7,23 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src https://fdwmhfruvdyrxidwuvqx.supabase.co; object-src 'none'; base-uri 'self'; form-action 'none'">
   <title>내 연구 기록 · EyeCare</title>
   <link rel="stylesheet" href="./dashboard.css">
+  <link rel="stylesheet" href="./algorithm.css">
   <script defer src="./vendor/qrcode.js"></script>
   <script defer src="./dashboard-core.js"></script>
+  <script defer src="./algorithm-core.js"></script>
+  <script defer src="./algorithm-editor.js"></script>
   <script defer src="./dashboard.js"></script>
 </head>
 <body>
   <header class="topbar wrap">
     <a class="brand" href="./index.html">eyecare <small>research</small></a>
-    <nav><a href="./index.html">합성 모델 실험실</a></nav>
+    <nav><a href="./algorithm.html">공개 산식 실험실</a></nav>
   </header>
   <main class="wrap">
     <section class="intro">
       <span class="kicker">PRIVATE RESEARCH DASHBOARD</span>
       <h1>내 연구 기록</h1>
-      <p>휴대폰에서 자동 동기화한 연구용 집계만 이 브라우저에서 살펴봅니다. 개인의 시간순 탐색 자료이며 임상 검증이나 일반화된 성능을 뜻하지 않습니다.</p>
+      <p>휴대폰에서 자동 동기화한 연구용 집계를 이 브라우저에서 살펴봅니다. 합성 표식은 별도로 분리합니다. 표식이 없는 과거 검증 행의 출처가 확인되기 전에는 이를 학습용 실측으로 간주하지 않습니다.</p>
       <div class="status-row"><strong id="connection-state" class="state">연결 확인 중</strong><span id="status-message" role="status" aria-live="polite">브라우저 계정을 준비하고 있습니다.</span></div>
     </section>
 
@@ -37,7 +40,7 @@
 
     <section id="analysis" hidden>
       <div class="section-head"><div><span class="kicker">02 / YOUR OBSERVATIONS</span><h2>시간에 따른 관측</h2></div><button id="refresh-data" type="button">새로고침</button></div>
-      <div id="empty-state" class="card empty" hidden>연결은 완료됐지만 아직 자동 동기화된 실제 연구 집계가 없습니다. 휴대폰 앱의 기록 탭에서 전송·대기 상태를 확인해 주세요.</div>
+      <div id="empty-state" class="card empty" hidden>연결은 완료됐지만 아직 자동 동기화된 표식 없는 연구 집계가 없습니다. 휴대폰 앱의 설정에서 전송·대기 상태를 확인해 주세요.</div>
       <div id="summary" class="summary"></div>
       <section class="card chart-card" aria-labelledby="timeline-title">
         <div class="chart-head"><div><h3 id="timeline-title">점수 시계열</h3><p>결측 점수는 선으로 이어 추정하지 않습니다. 색과 표본 정보로 신뢰도를 함께 확인하세요.</p></div><strong id="peak-label"></strong></div>
@@ -50,6 +53,9 @@
       <section class="card"><h3>자료 품질과 버전</h3><div id="quality-summary"></div><p class="fine">개인 기준선 표본 수는 현 연구 저장 계약에 없어 표시할 수 없습니다. 빈 값은 0이 아니라 관측되지 않았다는 뜻입니다.</p></section>
       <section class="card"><h3>최근 관측</h3><div class="table-scroll"><table><thead><tr><th>관측 시각</th><th>점수</th><th>피로 응답</th><th>신뢰도</th><th>알고리즘</th></tr></thead><tbody id="observations-body"></tbody></table></div></section>
       <section id="synthetic-panel" class="card synthetic" hidden><h3>합성 API 테스트 기록</h3><p id="synthetic-count"></p><p class="fine">합성 기록은 실제 관측 그래프와 비교 계산에서 제외했습니다.</p></section>
+      <div class="section-head"><div><span class="kicker">03 / PRIVATE WHAT-IF</span><h2>내 지표로 가상 비교</h2></div></div>
+      <p class="fine">원점수는 보존됩니다. 편집 설정만 이 브라우저에 남고, 관측 자료는 서버로 다시 쓰지 않습니다.</p>
+      <div id="algorithm-root"></div>
     </section>
   </main>
   <footer class="wrap">eyecare research · 연구용 탐색 화면 · 원본 화면·앱 이름은 표시하거나 전송하지 않습니다.</footer>

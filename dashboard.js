@@ -8,6 +8,7 @@
   const $ = id => document.getElementById(id);
   let working = false;
   let authMemory = null;
+  let editor = null;
 
   function canonicalUuid(value) {
     return typeof value === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
@@ -229,7 +230,7 @@
     const pairs = A.paired(real);
     $('empty-state').hidden = real.length !== 0;
     const cards = [
-      ['실제 관측', `${real.length}건`], ['점수 관측', `${real.filter(row => A.isScore(row.score)).length}건`],
+      ['표식 없는 관측 후보', `${real.length}건`], ['점수 관측', `${real.filter(row => A.isScore(row.score)).length}건`],
       ['NRS 짝지음', `${pairs.length}건`], ['연결 만료', new Date(expiresAt).toLocaleDateString('ko-KR')]
     ];
     $('summary').replaceChildren(...cards.map(([label, value]) => {
@@ -239,11 +240,14 @@
     drawTimeline(real); drawNrs(real); renderContributions(real); renderQuality(real); renderTable(real);
     $('synthetic-panel').hidden = synthetic.length === 0;
     $('synthetic-count').textContent = `${synthetic.length}건 · 실제 분석에서 제외`;
+    if (!editor) editor = window.EyeCareAlgorithmEditor.mount($('algorithm-root'), { rows: real, mode: 'private' });
+    else editor.setRows(real);
   }
   async function observations(ownerId) {
     if (!canonicalUuid(ownerId)) throw new Error('Invalid owner ID');
     const columns = ['id','report_id','observed_at','algorithm_version','score','confidence','subjective_fatigue_nrs',
-      'estimated_fields', ...A.domains.flatMap(d => [`${d.id}_score`,`${d.id}_quality`,`${d.id}_missing_code`])].join(',');
+      'estimated_fields','screen_change','continuous_minutes',
+      ...A.domains.flatMap(d => [`${d.id}_score`,`${d.id}_quality`,`${d.id}_missing_code`])].join(',');
     const rows = [];
     for (let offset = 0; offset < 5000; offset += 500) {
       const page = await rest(`/rest/v1/research_observations?owner_id=eq.${ownerId}&select=${columns}&order=observed_at.asc&limit=500&offset=${offset}`);

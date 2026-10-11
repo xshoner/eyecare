@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#123b32">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'self'; form-action 'none'">
+  <title>점수 구성 실험실 · EyeCare</title>
+  <link rel="stylesheet" href="./dashboard.css">
+  <link rel="stylesheet" href="./algorithm.css">
+  <script defer src="./algorithm-core.js"></script>
+  <script defer src="./algorithm-editor.js"></script>
+  <script defer src="./algorithm-demo.js"></script>
+</head>
+<body>
+  <header class="topbar wrap">
+    <a class="brand" href="./index.html">eyecare <small>formula lab</small></a>
+    <nav><a href="./dashboard.html">내 연결 기록 ↗</a></nav>
+  </header>
+  <main class="wrap">
+    <section class="intro">
+      <span class="kicker">BROWSER-ONLY WHAT-IF · 합성 예시</span>
+      <h1>점수 구성 실험실</h1>
+      <p>현재 앱 산식과 저장된 지표를 확인하고 가중치를 바꿔 봅니다. 이 공개 페이지는 합성 예시만 사용합니다. 변경 내용은 앱이나 서버에 적용되지 않으며 의료적 판단이 아닙니다.</p>
+    </section>
+    <section class="card algo-explainer">
+      <h2>현재 앱의 계산 방식</h2>
+      <p>화면 20% · 환경 10% · 자세 15% · 사용 20% · 눈 35%. 각 영역의 특징 위험도에 관측 품질을 반영하고, 결측 영역을 빼고 다시 나눕니다. 어두운 화면 자극·당일 사용량·보정된 거리는 조건이 충족될 때 최대 12점의 별도 가설 보정입니다.</p>
+      <code>기본점수 = Σ(영역점수 × 명목가중치 × 영역품질) / Σ(명목가중치 × 영역품질)</code>
+      <p class="fine">웹에는 원시 특징, 개인 기준선, 상황 보정의 상세 근거가 저장되지 않습니다. 아래의 재계산은 가상 기본점수이며, 저장된 원점수와 정확히 일치하지 않을 수 있습니다.</p>
+    </section>
+    <div id="algorithm-root"></div>
+  </main>
+  <footer class="wrap">설정 버전 whatif-domain-v1 · 설정만 이 브라우저에 저장 · 합성 예시</footer>
+</body>
+</html>

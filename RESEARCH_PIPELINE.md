@@ -1,12 +1,12 @@
-# Research data pipeline — 0.5.2 alpha
+# Research data pipeline — 0.6.0 alpha
 
 The public home page is a synthetic-data methodology simulator. The separate [private dashboard](dashboard.html) signs its browser into Supabase anonymously and reads only observations authorized by a time-limited phone-to-browser grant. It has no public observation feed.
 
 ## Android export
 
-- Research collection is optional and requires explicit consent. The Android app signs in anonymously, protects its Auth session with Android Keystore, and uploads aggregate fields only when a report is exported.
+- Research collection is optional and requires explicit consent. The Android app signs in anonymously, protects its Auth session with Android Keystore, and uploads aggregate fields for completed reports through its retrying outbox. Export is also available for a local copy.
 - The pending outbox uses stable report IDs, retries after offline/transient failures, and handles a duplicate insert by checking that the same owner already has the report. Observation rows are insert-only.
-- The optional subjective fatigue NRS is requested before export so that it can accompany the immutable observation. Missing values stay null; they are never treated as zero.
+- The optional subjective fatigue NRS can accompany the immutable observation when supplied before its first upload. Missing values stay null; they are never treated as zero.
 - Withdrawal stops future uploads and clears pending local reports. It does not delete existing server records. The user must explicitly consent again before resuming.
 - Uninstalling the app loses the anonymous owner identity and its ability to recover those rows or revoke browser access. Reinstalling creates a new owner.
 
@@ -22,7 +22,9 @@ The database migration `20261010133126_create_owner_only_research_storage` creat
 
 The observation schema accepts scores, five domain scores and quality values, confidence, NRS, a short algorithm version, estimates/missing codes, and bounded aggregate measurements. It excludes camera/screen originals, screen text, application names, full gaze traces, account names, and free-form notes.
 
-The dashboard plots observed score against time, highlights the peak, shows paired score/NRS records only when both exist in the same report, and reconstructs domain contributions using nominal weights and stored quality. Exact adjustment components and raw feature counts are absent from the research schema, so reconstructed contributions are labeled as approximate. Missing values are shown as missing. Records tagged `synthetic-test-` stay out of real-data charts and counts. These exploratory charts are not clinical validation.
+The dashboard plots observed score against time, highlights the peak, shows paired score/NRS records only when both exist in the same report, and reconstructs domain contributions using nominal weights and stored quality. Exact adjustment components and raw feature counts are absent from the research schema, so reconstructed contributions are labeled as approximate. Missing values are shown as missing. Records tagged `synthetic-test-` stay out of candidate charts and counts. Untagged rows have not been independently proven to originate from real phone measurements. These exploratory charts are not clinical validation.
+
+The [algorithm editor](algorithm.html) is a browser-only what-if calculator over synthetic examples, also available with paired candidate rows in the dashboard. It saves versioned weight settings in browser storage and can export their JSON. It does not update the database or phone algorithm. The app retains `efs-hypothesis-0.5` nominal weights and adds only a separate, earlier-report personal trend explanation; scarce and provenance-unverified NRS labels were not used to fit a new score.
 
 ## Validation
 
