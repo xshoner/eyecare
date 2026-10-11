@@ -269,14 +269,14 @@
       if (state !== 'linked') {
         const message = state === 'expired' ? '30일 연결 기간이 끝났습니다. 휴대폰에서 다시 승인해 주세요.'
           : state === 'revoked' ? '휴대폰에서 연결이 해제되었거나 다른 브라우저로 교체됐습니다.'
-            : '휴대폰 앱에서 QR을 스캔하고 승인하면 기존·향후 연구용 집계를 읽습니다.';
+            : '휴대폰 앱에서 QR을 스캔하고 승인하면 기존·향후 자동 동기화된 연구용 집계를 읽습니다.';
         setStatus(state, message);
         return;
       }
       persist(GRANT_KEY, { browser_id: session.user_id, expires_at: grant.expires_at });
       const rows = await observations(grant.owner_id);
       renderData(rows, grant.expires_at);
-      setStatus('linked', rows.length ? '이 브라우저에 승인된 연구 집계만 표시합니다.' : '연결됐습니다. 아직 내보낸 기록이 없습니다.');
+      setStatus('linked', rows.length ? '이 브라우저에 승인된 연구 집계만 표시합니다.' : '연결됐습니다. 아직 자동 동기화된 기록이 없습니다.');
     } catch (error) {
       setStatus(error.status ? 'error' : 'offline', error.status
         ? `서버 응답 ${error.status}. 잠시 후 다시 확인해 주세요.`
