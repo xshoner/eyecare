@@ -1,6 +1,6 @@
 {
   "name": "eyecare-research-site",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "private": true,
   "scripts": {
     "check": "node --check app.js && node --check dashboard-core.js && node --check dashboard.js && node --check algorithm-core.js && node --check algorithm-editor.js && node --check algorithm-demo.js",

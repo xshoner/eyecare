@@ -18,11 +18,11 @@
   </header>
   <main id="top">
     <section class="hero wrap">
-      <div class="eyebrow">EFS HYPOTHESIS 0.5 · ANDROID RESEARCH ALPHA</div>
+      <div class="eyebrow">EFS HYPOTHESIS 0.7 · ANDROID RESEARCH ALPHA</div>
       <h1>눈의 피로를 <em>설명 가능한</em><br>신호로 살펴봅니다.</h1>
       <p class="lede">화면 자극, 주변 환경, 자세, 사용 습관, 눈 반응을 함께 관찰합니다. 점수는 연구용 추정치이며 의료적 판단이 아닙니다. 이 페이지에는 실제 사용자 데이터가 표시되지 않습니다.</p>
       <div class="hero-actions"><a class="button primary" href="./algorithm.html">가중치 실험하기 ↗</a><a class="button ghost" href="#method">계산 방식 보기</a></div>
-      <div class="hero-meta"><span>05개 지표 영역</span><span>최대 +12점 상황 보정</span><span>결측·품질 공개</span></div>
+      <div class="hero-meta"><span>05개 영역</span><span>품질·결측 반영</span><span>중복 상황 가산 없음</span></div>
       <div class="orbit orbit-a"></div><div class="orbit orbit-b"></div>
     </section>
 
@@ -32,20 +32,15 @@
         <h2>직접 움직여 보는 점수</h2>
         <p>아래 입력은 <strong>합성 예시</strong>입니다. 브라우저에서만 계산하며 서버로 전송하지 않습니다.</p>
         <div id="controls"></div>
-        <div class="scenario-inputs">
-          <label>어두운 환경의 밝고 변화가 큰 화면 <output id="dark-output">0분</output><input id="dark-minutes" type="range" min="0" max="15" value="0"></label>
-          <label>오늘의 누적 사용시간 <output id="daily-output">120분</output><input id="daily-minutes" type="range" min="0" max="600" step="10" value="120"></label>
-          <label class="check"><input id="distance-calibrated" type="checkbox"> 거리 보정이 완료된 실험값 사용 <small>(실제 앱은 미측정)</small></label>
-          <label id="distance-row" hidden>보정 거리 <output id="distance-output">30 cm</output><input id="distance-cm" type="range" min="15" max="60" value="30"></label>
-        </div>
+
       </div>
       <div class="panel result" aria-live="polite">
         <div class="result-head"><span>예시 추정 점수</span><span class="pill">임상 검증 전</span></div>
         <div class="score-line"><strong id="total-score">—</strong><span>/ 100</span></div>
         <p class="score-sentence" id="score-sentence"></p>
-        <div class="formula-sum"><span>기본 <b id="base-score">—</b></span><span>+</span><span>상황 보정 <b id="adjustment-score">—</b></span><span>→</span><span>총점</span></div>
+        <div class="formula-sum"><span>품질 반영 5영역 가중평균</span><span>·</span><span>중복 상황 가산 0점</span></div>
         <div class="contributions" id="contributions"></div>
-        <div class="adjustments" id="adjustments"></div>
+
         <p class="caption">명목 비중은 총 100%입니다. 관측되지 않은 영역은 0점으로 치지 않고 분모에서 제외하며 신뢰도를 낮춥니다.</p>
       </div>
     </section>
@@ -59,20 +54,28 @@
     <section id="method" class="wrap method">
       <div class="section-kicker">03 / TRANSPARENT BY DESIGN</div><h2>100점의 안쪽을 공개합니다.</h2>
       <div class="weight-grid">
-        <article><span>01</span><strong>화면 자극</strong><b>20%</b><p>색 비율, 변화량·면적, 플래시·장면 변화, 발광 추정</p></article>
-        <article><span>02</span><strong>주변 환경</strong><b>10%</b><p>주변 빛과 화면의 차이, 시간, 열 상태</p></article>
-        <article><span>03</span><strong>자세·움직임</strong><b>15%</b><p>기기 기울기·흔들림, 상대적 머리 움직임</p></article>
-        <article><span>04</span><strong>사용 습관</strong><b>20%</b><p>연속 사용, 전환·잠금 해제, 짧은 휴식, 개인 기준선</p></article>
-        <article><span>05</span><strong>눈 반응</strong><b>35%</b><p>깜빡임, 눈 뜸·감김, 찡그림, 상대적 시선 움직임</p></article>
+        <article><span>01</span><strong>화면 자극</strong><b>26%</b><p>색 비율, 변화량·면적, 플래시·장면 변화, 발광 추정</p></article>
+        <article><span>02</span><strong>주변 환경</strong><b>22%</b><p>주변 빛과 화면의 차이, 시간, 열 상태</p></article>
+        <article><span>03</span><strong>자세·움직임</strong><b>8%</b><p>기기 기울기·흔들림, 상대적 머리 움직임</p></article>
+        <article><span>04</span><strong>사용 습관</strong><b>18%</b><p>연속 사용, 전환·잠금 해제, 짧은 휴식, 개인 기준선</p></article>
+        <article><span>05</span><strong>눈 반응</strong><b>26%</b><p>깜빡임, 눈 뜸·감김, 찡그림, 상대적 시선 움직임</p></article>
       </div>
-      <div class="formula-card"><div><span class="section-kicker">EFS HYPOTHESIS 0.5</span><h3>산식</h3></div><div><code>영역 점수 = Σ(특징 위험도 × 품질) / Σ품질</code><code>기본 점수 = Σ(영역 점수 × 명목 비중 × 관측률) / Σ(명목 비중 × 관측률)</code><code>최종 점수 = min(100, 기본 점수 + min(12, 상황 보정 합))</code><p>화면·환경·사용시간의 상호작용 보정은 가설입니다. 5/10분, 240/360/480분, 거리 기준은 임상 기준이 아닙니다. 거리 보정은 앱에 측정·교정 기능이 없어 현재 적용되지 않습니다.</p></div></div>
+      <div class="formula-card"><div><span class="section-kicker">EFS HYPOTHESIS 0.7</span><h3>산식</h3></div><div><code>영역 점수 = Σ(특징 위험도 × 품질) / Σ품질</code><code>기본 점수 = Σ(영역 점수 × 명목 비중 × 관측률) / Σ(명목 비중 × 관측률)</code><code>최종 점수 = 품질을 반영한 영역 가중평균; 상황 중복 가산 0점</code><p>0.7 엔진에서는 어두운 환경과 근거리 관측을 해당 영역에서 한 번만 반영합니다. 조도·화면 밝기와 근거리 경계는 연구 가설이며 임상 기준이 아닙니다.</p></div></div>
+    </section>
+
+    <section class="wrap method" aria-labelledby="distance-method">
+      <div class="section-kicker">04 / DISTANCE ESTIMATE</div><h2 id="distance-method">주로 보는 거리는 근사값입니다.</h2>
+      <p>전면 카메라의 홍채 픽셀 지름과 기기 렌즈 정보를 사용해 눈–카메라축 거리를 근사합니다. 보정이 없으면 홍채 지름 11.7 mm를 인구 평균 가정으로 사용합니다. 사용자가 자로 30 cm 기준을 맞춰 보정할 수 있습니다. 카메라 정보·홍채 품질이 부족하면 거리를 표시하지 않습니다.</p>
+      <p>보고서의 거리는 유효 관측 시간으로 가중한 중앙값이며 관측 범위와 30 cm 미만 비율을 따로 보여줍니다. 눈–화면 중심 거리와 다르고, 거리만으로 시력이나 안경 도수를 계산할 수 없습니다.</p>
+      <p>조도 센서의 lux와 화면 밝기 설정값은 망막 노출량이나 실제 디스플레이 휘도가 아닙니다. 26/22/8/18/26은 사용자 설계 비중이며 학습·의학 검증 결과가 아닙니다.</p>
+      <p class="caption">근거: <a href="https://research.google/blog/mediapipe-iris-real-time-iris-tracking-depth-estimation/">Google MediaPipe Iris</a> · <a href="https://developer.android.com/reference/android/hardware/camera2/CameraCharacteristics#LENS_INTRINSIC_CALIBRATION">Android Camera2</a> · <a href="https://pubmed.ncbi.nlm.nih.gov/27716998/">스마트폰 거리·눈 피로 관찰 연구</a> · <a href="https://medlineplus.gov/ency/article/003396.htm">시력 검사 방법</a>. 원시 논문의 오차는 이 앱 구현의 정확도 보증이 아닙니다.</p>
     </section>
 
     <section id="privacy" class="wrap privacy">
-      <div><div class="section-kicker">04 / DATA RESPONSIBILITY</div><h2>공개 예시와 내 기록은 분리합니다.</h2><p>공개 모델·편집기에는 합성 예시만 표시합니다. 본인 기록은 별도 연결을 승인한 브라우저의 대시보드에서만 확인하며, 가중치 실험은 앱 점수나 서버 관측을 바꾸지 않습니다.</p></div>
+      <div><div class="section-kicker">05 / DATA RESPONSIBILITY</div><h2>공개 예시와 내 기록은 분리합니다.</h2><p>공개 모델·편집기에는 합성 예시만 표시합니다. 본인 기록은 별도 연결을 승인한 브라우저의 대시보드에서만 확인하며, 가중치 실험은 앱 점수나 서버 관측을 바꾸지 않습니다.</p></div>
       <ul><li>원시 카메라 영상·화면 이미지·화면 텍스트·앱 이름을 수집 대상으로 두지 않습니다.</li><li>업로드 후보는 가명 식별자, 알고리즘 버전, 요약 지표·품질·결측, 선택한 주관적 피로 응답으로 제한합니다.</li><li>보정 자료와 검증 자료는 참여자 단위로 분리하고, 자동 재학습·운영 배포는 하지 않습니다.</li></ul>
     </section>
   </main>
-  <footer class="wrap"><strong>eyecare research</strong><span>연구용 추정 · v0.5</span><a href="https://github.com/xshoner/eyecare">GitHub ↗</a></footer>
+  <footer class="wrap"><strong>eyecare research</strong><span>연구용 추정 · v0.7</span><a href="https://github.com/xshoner/eyecare">GitHub ↗</a></footer>
 </body>
 </html>

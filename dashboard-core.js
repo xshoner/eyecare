@@ -5,11 +5,11 @@
   else root.EyeCareAnalysis = api;
 })(typeof window === 'undefined' ? globalThis : window, function () {
   const domains = [
-    { id: 'screen', label: '화면 자극', weight: 20 },
-    { id: 'environment', label: '주변 환경', weight: 10 },
-    { id: 'posture', label: '자세·움직임', weight: 15 },
-    { id: 'usage', label: '사용 습관', weight: 20 },
-    { id: 'eyes', label: '눈 반응', weight: 35 }
+    { id: 'screen', label: '화면 자극', weight: 26 },
+    { id: 'environment', label: '주변 환경', weight: 22 },
+    { id: 'posture', label: '자세·움직임', weight: 8 },
+    { id: 'usage', label: '사용 습관', weight: 18 },
+    { id: 'eyes', label: '눈 반응', weight: 26 }
   ];
   const isSynthetic = row => String(row.algorithm_version || '').startsWith('synthetic-test-');
   const isScore = value => typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 100;
@@ -27,12 +27,15 @@
   }
 
   function contributions(row) {
-    const observed = domains.map(domain => {
+    const historical = row.algorithm_version !== 'efs-hypothesis-0.7';
+    const old = [20, 10, 15, 20, 35];
+    const observed = domains.map((domain, index) => {
+      const weight = historical ? old[index] : domain.weight;
       const score = row[`${domain.id}_score`];
       const quality = row[`${domain.id}_quality`];
       const valid = isScore(score) && typeof quality === 'number' && quality > 0 && quality <= 1;
-      return { ...domain, score: valid ? score : null, quality: valid ? quality : null,
-        effectiveWeight: valid ? domain.weight * quality : 0 };
+      return { ...domain, weight, score: valid ? score : null, quality: valid ? quality : null,
+        effectiveWeight: valid ? weight * quality : 0 };
     });
     const total = observed.reduce((sum, item) => sum + item.effectiveWeight, 0);
     return observed.map(item => ({ ...item,

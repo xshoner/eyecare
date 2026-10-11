@@ -13,10 +13,10 @@ test('the published baseline weights sum to 100 and use quality-weighted availab
   const baseline = W.base();
   assert.equal(W.normalized(baseline).weights.reduce((n, item) => n + item.share, 0), 100);
   const result = W.simulate(row, baseline);
-  const expected = Math.round((60 * 20 * .8 + 30 * 10 * .5 + 40 * 20 * .9 + 80 * 35 * .6) /
-    (20 * .8 + 10 * .5 + 20 * .9 + 35 * .6));
+  const expected = Math.round((60 * 26 * .8 + 30 * 22 * .5 + 40 * 18 * .9 + 80 * 26 * .6) /
+    (26 * .8 + 22 * .5 + 18 * .9 + 26 * .6));
   assert.equal(result.score, expected);
-  assert.equal(result.coverage, 85);
+  assert.equal(result.coverage, 92);
   assert.equal(result.contributions.find(item => item.id === 'posture').points, null);
 });
 
@@ -66,5 +66,14 @@ test('reset and cancellation can restore the immutable baseline or saved edit', 
   const draft = W.copy(saved); draft[0].weight = 90;
   assert.equal(W.copy(saved)[0].weight, 35);
   assert.deepEqual(W.base(), baseline);
-  assert.equal(W.base()[0].weight, 20);
+  assert.equal(W.base()[0].weight, 26);
+});
+
+test('historical reconstruction uses each recorded score version', () => {
+  assert.deepEqual(W.base().map(item => item.weight), [26, 22, 8, 18, 26]);
+  assert.deepEqual(W.baseForVersion('efs-hypothesis-0.5').map(item => item.weight),
+    [20, 10, 15, 20, 35]);
+  assert.deepEqual(W.baseForVersion('efs-hypothesis-0.7').map(item => item.weight),
+    [26, 22, 8, 18, 26]);
+  assert.equal(W.baseForVersion('legacy-session-aggregate-v1'), null);
 });

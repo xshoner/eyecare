@@ -4,13 +4,13 @@
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.EyeCareWhatIf = api;
 })(typeof window === 'undefined' ? globalThis : window, function () {
-  const VERSION = 'whatif-domain-v1';
+  const VERSION = 'whatif-domain-v2';
   const definitions = Object.freeze([
-    { id: 'screen', label: '화면 자극', type: 'domain', weight: 20, detail: '색 비율, 화면 변화·장면 전환, 발광 추정' },
-    { id: 'environment', label: '주변 환경', type: 'domain', weight: 10, detail: '빛 대비, 시간대, 기기 열 상태' },
-    { id: 'posture', label: '자세·움직임', type: 'domain', weight: 15, detail: '기울기, 흔들림, 상대적 머리 움직임' },
-    { id: 'usage', label: '사용 습관', type: 'domain', weight: 20, detail: '연속 사용, 전환·잠금 해제, 짧은 휴식' },
-    { id: 'eyes', label: '눈 반응', type: 'domain', weight: 35, detail: '깜빡임, 눈 뜸·감김, 찡그림' },
+    { id: 'screen', label: '화면 자극', type: 'domain', weight: 26, detail: '빛 특성, 화면 변화·장면 전환, 깜빡임 위험' },
+    { id: 'environment', label: '주변 환경', type: 'domain', weight: 22, detail: '실측 조도와 밝기 설정의 상대 위험, 온도·움직임' },
+    { id: 'posture', label: '자세·움직임', type: 'domain', weight: 8, detail: '기울기, 흔들림, 상대적 머리 움직임' },
+    { id: 'usage', label: '사용 습관', type: 'domain', weight: 18, detail: '연속 사용, 근거리 관측, 전환·잠금해제, 짧은 휴식' },
+    { id: 'eyes', label: '눈 반응', type: 'domain', weight: 26, detail: '깜빡임, 눈 뜸·감김, 찡그림' },
     { id: 'screen_change', label: '화면 변화량', type: 'stored', weight: 10,
       detail: '저장된 수치 · 0.02~0.12 선형 위험도. 화면 영역과 중복될 수 있음', low: .02, high: .12, bound: 1 },
     { id: 'continuous_minutes', label: '연속 사용 시간', type: 'stored', weight: 10,
@@ -25,10 +25,15 @@
     { id: 'blink_per_min', label: '분당 깜빡임', note: '개인 기준선과 신호 품질이 서버에 없어 원 점수 재계산 불가.' },
     { id: 'eye_open_mean', label: '평균 눈 개방도', note: '개인 기준선과 신호 품질이 서버에 없어 원 점수 재계산 불가.' },
     { id: 'dark_stimulus_minutes', label: '어두운 환경의 화면 자극', note: '상황 보정 근거. 추정값일 수 있어 기본점수로 추가하지 않음.' },
-    { id: 'calibrated_distance_cm', label: '보정된 거리', note: '현재 수집 자료에 값이 없으며 앱에 보정 측정 구현이 없음.' }
+    { id: 'calibrated_distance_cm', label: '보정된 거리', note: '현재 수집 자료에 값이 없으며 앱에 보정 측정 구현이 없음.' },
+    { id: 'distance_estimate_cm', label: '추정 거리', note: '0.7 앱 내부 신호이며 현재 연구 DB 스키마에는 없어 웹에서 계산할 수 없습니다.' }
   ]);
   const base = () => definitions.filter(item => item.type === 'domain')
     .map(item => ({ id: item.id, enabled: true, weight: item.weight }));
+  const historicalBase = () => [20, 10, 15, 20, 35].map((weight, i) =>
+    ({ id: definitions[i].id, enabled: true, weight }));
+  const baseForVersion = version => version === 'efs-hypothesis-0.7' || version === 'synthetic-test-whatif' ? base()
+    : version === 'efs-hypothesis-0.5' ? historicalBase() : null;
   const copy = value => JSON.parse(JSON.stringify(value));
   const range = (value, min, max) => typeof value === 'number' && Number.isFinite(value) && value >= min && value <= max;
 
@@ -104,6 +109,6 @@
       label: clean, dataNeeded: String(dataNeeded).trim().slice(0, 180),
       formula: String(formula).trim().slice(0, 180), enabled: false, weight: 0 }];
   }
-  return { VERSION, definitions, dictionary, base, copy, validate, normalized, simulate,
+  return { VERSION, definitions, dictionary, base, historicalBase, baseForVersion, copy, validate, normalized, simulate,
     addStored, addCustom };
 });

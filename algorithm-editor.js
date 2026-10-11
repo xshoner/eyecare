@@ -2,7 +2,7 @@
 (function () {
   'use strict';
   const M = window.EyeCareWhatIf;
-  const KEY = 'eyecare_whatif_config_v1';
+  const KEY = 'eyecare_whatif_config_v2';
   const node = (tag, className, text) => {
     const el = document.createElement(tag);
     if (className) el.className = className;
@@ -69,7 +69,8 @@
       const body = node('tbody');
       for (const row of sample) {
         const original = isScore(row.score) ? row.score : null;
-        const base = M.simulate(row, M.base());
+        const historical = M.baseForVersion(row.algorithm_version);
+        const base = historical ? M.simulate(row, historical) : { score: null };
         const proposed = M.simulate(row, draft);
         const tr = node('tr');
         [safeDate(row.observed_at), printScore(original), printScore(base.score),
@@ -110,7 +111,7 @@
       controls.replaceChildren();
       const intro = node('section', 'algo-panel');
       intro.append(node('p', 'algo-kicker', `설정 버전 ${M.VERSION}`), node('h3', '', '가중치와 지표 구성'));
-      intro.append(node('p', 'algo-muted', '앱의 기본 비중은 화면 20 · 환경 10 · 자세 15 · 사용 20 · 눈 35입니다. 앱 점수의 학습·원격 변경은 하지 않습니다.'));
+      intro.append(node('p', 'algo-muted', '0.7 설계 비중은 화면 26 · 환경 22 · 자세 8 · 사용 18 · 눈 26입니다. 사용자 선택값이며 학습·임상 검증 비중이 아닙니다.'));
       if (saved.savedAt) intro.append(node('p', 'algo-fine', `이 브라우저에 마지막 저장: ${safeDate(saved.savedAt)}`));
       const normalized = M.normalized(draft);
       intro.append(node('p', normalized.error ? 'algo-error' : 'algo-highlight',

@@ -25,6 +25,18 @@ test('reconstructed contributions respect missingness and effective quality weig
   assert.equal(rows.find(item => item.id === 'environment').reconstructedPoints, 4);
 });
 
+test('contributions keep historical weights separate from the 0.7 design', () => {
+  const row = { screen_score: 80, screen_quality: 1,
+    environment_score: 20, environment_quality: .5 };
+  const old = A.contributions({ ...row, algorithm_version: 'efs-hypothesis-0.5' });
+  const current = A.contributions({ ...row, algorithm_version: 'efs-hypothesis-0.7' });
+  assert.equal(old.find(item => item.id === 'screen').weight, 20);
+  assert.equal(current.find(item => item.id === 'screen').weight, 26);
+  assert.equal(current.find(item => item.id === 'environment').weight, 22);
+  assert.notEqual(old.find(item => item.id === 'screen').reconstructedPoints,
+    current.find(item => item.id === 'screen').reconstructedPoints);
+});
+
 test('grant state distinguishes waiting, linked, expiration, and revocation', () => {
   const now = Date.parse('2026-10-10T12:00:00Z');
   const future = { expires_at: '2026-10-11T12:00:00Z', revoked_at: null };
