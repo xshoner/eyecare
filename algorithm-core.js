@@ -21,11 +21,11 @@
     { id: 'screen_change', label: '화면 변화량', note: '저장 수치. 가상 추가 가능. 화면 영역과 중복 가능.' },
     { id: 'ambient_lux', label: '주변 조도', note: '저장 수치이지만 화면 발광과의 대비가 필요해 단독 재계산 불가.' },
     { id: 'continuous_minutes', label: '연속 사용 시간', note: '저장 수치. 가상 추가 가능. 사용 영역과 중복 가능.' },
-    { id: 'today_minutes', label: '오늘 사용 시간', note: '저장 수치. 앱의 조건부 상황 보정 근거이며 기본점수 지표가 아님.' },
+    { id: 'today_minutes', label: '오늘 사용 시간', note: '저장된 오늘 사용 시간. 0.7 점수에는 직접 쓰이거나 별도 상황 보정으로 더해지지 않습니다. 과거 0.5 기록의 해석에만 참고합니다.' },
     { id: 'blink_per_min', label: '분당 깜빡임', note: '개인 기준선과 신호 품질이 서버에 없어 원 점수 재계산 불가.' },
     { id: 'eye_open_mean', label: '평균 눈 개방도', note: '개인 기준선과 신호 품질이 서버에 없어 원 점수 재계산 불가.' },
-    { id: 'dark_stimulus_minutes', label: '어두운 환경의 화면 자극', note: '상황 보정 근거. 추정값일 수 있어 기본점수로 추가하지 않음.' },
-    { id: 'calibrated_distance_cm', label: '보정된 거리', note: '현재 수집 자료에 값이 없으며 앱에 보정 측정 구현이 없음.' },
+    { id: 'dark_stimulus_minutes', label: '어두운 환경의 화면 자극', note: '저장된 추정 집계. 0.7은 조도와 상대 화면 밝기로 계산한 어두움 위험을 환경 영역에 반영하며, 이 항목을 별도로 가산하지 않습니다.' },
+    { id: 'calibrated_distance_cm', label: '보정된 거리', note: '기존 연구 계약의 보정 거리 필드. 0.7 앱은 30 cm 사용자 기준 보정을 제공하지만 현재 업로드에는 이 필드를 채우지 않습니다. 새 추정 거리와 혼용하지 않습니다.' },
     { id: 'distance_estimate_cm', label: '추정 거리', note: '0.7 앱 내부 신호이며 현재 연구 DB 스키마에는 없어 웹에서 계산할 수 없습니다.' }
   ]);
   const base = () => definitions.filter(item => item.type === 'domain')
