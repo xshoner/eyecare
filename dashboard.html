@@ -44,6 +44,7 @@
       <div class="section-head"><div><span class="kicker">02 / YOUR OBSERVATIONS</span><h2>시간에 따른 관측</h2></div><button id="refresh-data" type="button">새로고침</button></div>
       <div id="empty-state" class="card empty" hidden>연결은 완료됐지만 아직 자동 동기화된 표식 없는 연구 집계가 없습니다. 휴대폰 앱의 설정에서 전송·대기 상태를 확인해 주세요.</div>
       <div id="summary" class="summary"></div>
+      <section class="card personal-card" aria-labelledby="personal-title"><h3 id="personal-title">내 응답으로 맞춘 참고 점수</h3><p id="personal-summary"></p><p class="fine">같은 산식 버전의 비교 가능한 이전 기록과 서버에 먼저 도착한 응답 5개 이상만 사용합니다. 중앙값 차이를 최대 12점까지 완만히 적용하며, 원래 점수나 연구 관측은 바꾸지 않습니다. 의료 진단이나 검증된 예측 모델이 아닙니다.</p></section>
       <section class="card chart-card" aria-labelledby="timeline-title">
         <div class="chart-head"><div><h3 id="timeline-title">점수 시계열</h3><p>결측 점수는 선으로 이어 추정하지 않습니다. 색과 표본 정보로 신뢰도를 함께 확인하세요.</p></div><strong id="peak-label"></strong></div>
         <div id="timeline" class="chart" role="img" aria-label="관측 시간에 따른 점수 그래프"></div>
@@ -59,10 +60,10 @@
       </section>
       <div class="two-column">
         <section class="card" aria-labelledby="contribution-title"><h3 id="contribution-title">영역별 영향</h3><p id="contribution-note" class="fine">영역 점수와 품질로 재구성한 기여도입니다. 앱의 원래 기본 점수나 상황 보정 점수는 서버에 저장되지 않아 표시하지 않습니다.</p><div id="contributions"></div></section>
-        <section class="card" aria-labelledby="nrs-title"><h3 id="nrs-title">주관적 피로 응답 비교</h3><p id="nrs-count" class="fine"></p><p class="fine">서버 전송 후 입력한 응답은 현재 저장 계약상 기존 관측에 추가되지 않습니다.</p><div id="nrs-chart" class="chart" role="img" aria-label="동일 보고서의 점수와 주관적 피로 응답 비교"></div></section>
+        <section class="card" aria-labelledby="nrs-title"><h3 id="nrs-title">주관적 피로 응답 비교</h3><p id="nrs-count" class="fine"></p><p class="fine">수정한 응답은 이전 응답을 지우지 않고 새 기록으로 동기화합니다. 차트에는 보고서별 최신 응답 하나만 사용합니다.</p><div id="nrs-chart" class="chart" role="img" aria-label="동일 보고서의 점수와 주관적 피로 응답 비교"></div></section>
       </div>
-      <section class="card"><h3>자료 품질과 버전</h3><div id="quality-summary"></div><p class="fine">개인 기준선 표본 수는 현 연구 저장 계약에 없어 표시할 수 없습니다. 빈 값은 0이 아니라 관측되지 않았다는 뜻입니다.</p></section>
-      <section class="card"><h3>최근 관측</h3><div class="table-scroll"><table><thead><tr><th>관측 시각</th><th>점수</th><th>피로 응답</th><th>신뢰도</th><th>알고리즘</th></tr></thead><tbody id="observations-body"></tbody></table></div></section>
+      <section class="card"><h3>자료 품질과 버전</h3><div id="quality-summary"></div><p class="fine">빈 값은 0이 아니라 관측되지 않았다는 뜻입니다. 개인 기준 참고값은 산식 버전마다 별도로 계산합니다.</p></section>
+      <section class="card"><h3>최근 관측</h3><div class="table-scroll"><table><thead><tr><th>관측 시각</th><th>원점수</th><th>개인 기준 참고</th><th>피로 응답</th><th>신뢰도</th><th>알고리즘</th></tr></thead><tbody id="observations-body"></tbody></table></div></section>
       <section id="synthetic-panel" class="card synthetic" hidden><h3>합성 API 테스트 기록</h3><p id="synthetic-count"></p><p class="fine">합성 기록은 실제 관측 그래프와 비교 계산에서 제외했습니다.</p></section>
       <div class="section-head"><div><span class="kicker">03 / PRIVATE WHAT-IF</span><h2>내 지표로 가상 비교</h2></div></div>
       <p class="fine">원점수는 보존됩니다. 편집 설정만 이 브라우저에 남고, 관측 자료는 서버로 다시 쓰지 않습니다.</p>

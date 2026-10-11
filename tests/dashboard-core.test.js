@@ -80,3 +80,28 @@ test('grant state distinguishes waiting, linked, expiration, and revocation', ()
   assert.equal(A.grantState(future, null, now), 'revoked');
   assert.equal(A.grantState({ expires_at: '2026-10-09T12:00:00Z' }, null, now), 'expired');
 });
+
+test('append-only answers use the newest receipt for display without mutating the observation', () => {
+  const rows = [{ report_id: 'one', subjective_fatigue_nrs: 3 }];
+  const events = [
+    { id: 'a', report_id: 'one', subjective_fatigue_nrs: 4, received_at: '2026-10-10T08:00:00Z' },
+    { id: 'b', report_id: 'one', subjective_fatigue_nrs: 7, received_at: '2026-10-10T09:00:00Z' }
+  ];
+  assert.deepEqual(A.attachResponses(rows, events).map(row => row.subjective_fatigue_nrs), [7]);
+  assert.equal(rows[0].subjective_fatigue_nrs, 3);
+});
+
+test('personal reference uses only prior, comparable, same-version received answers', () => {
+  const quality = { algorithm_version: 'efs-hypothesis-0.7', screen_quality: 1, environment_quality: 1 };
+  const rows = Array.from({ length: 5 }, (_, i) => ({ ...quality,
+    report_id: `prior-${i}`, score: 40, observed_at: `2026-10-0${i + 1}T08:00:00Z` }));
+  const target = { ...quality, report_id: 'target', score: 50, observed_at: '2026-10-10T08:00:00Z' };
+  const events = rows.map((row, i) => ({ id: String(i), report_id: row.report_id,
+    subjective_fatigue_nrs: 7, answered_at: `2026-10-0${i + 1}T08:10:00Z`,
+    received_at: `2026-10-0${i + 1}T08:11:00Z` }));
+  assert.deepEqual(A.personalized(target, [...rows, target], events), { score: 60, samples: 5, offset: 10 });
+  assert.deepEqual(A.personalized(rows[4], [...rows, target], events), { score: null, samples: 4, offset: null });
+  const revisedAfterTarget = { ...events[0], id: 'later', subjective_fatigue_nrs: 0,
+    answered_at: '2026-10-11T08:00:00Z', received_at: '2026-10-11T08:00:01Z' };
+  assert.equal(A.personalized(target, [...rows, target], [...events, revisedAfterTarget]).score, 60);
+});

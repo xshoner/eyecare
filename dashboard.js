@@ -226,7 +226,7 @@
       const fill = document.createElement('div'); fill.style.width = `${item.score ?? 0}%`;
       track.append(fill); line.append(heading, track); root.append(line);
     }
-    $('contribution-note').textContent = `${dateLabel(last.observed_at)} 관측 기준. 영역 점수·품질과 버전 0.5의 명목 가중치로 기여도를 재구성했습니다. 정확한 기본 점수·상황 보정은 서버에 저장되지 않아 추정하지 않습니다.`;
+    $('contribution-note').textContent = `${dateLabel(last.observed_at)} 관측 기준. 영역 점수·품질과 ${last.algorithm_version}의 명목 가중치로 기여도를 재구성했습니다. 정확한 기본 점수·상황 보정은 서버에 저장되지 않아 추정하지 않습니다.`;
   }
   function renderQuality(rows) {
     const root = $('quality-summary'); root.replaceChildren();
@@ -244,19 +244,24 @@
     root.append(textNode('p', `영역 점수 결측 ${missing}개 · 추정 표시 필드 ${estimated}개 (관측 전체 기준)`));
     root.append(textNode('p', `비교 가능한 점수 ${rows.filter(A.comparableScore).length}개 · 저장 점수 ${rows.filter(row => A.isScore(row.score)).length}개. 0.7/0.5는 가용 비중 30% 이상만 차트·NRS·최고점에 사용합니다.`));
   }
-  function renderTable(rows) {
+  function renderTable(rows, responses) {
     const body = $('observations-body'); body.replaceChildren();
     for (const row of [...rows].reverse().slice(0, 100)) {
       const tr = document.createElement('tr');
+      const personal = A.personalized(row, rows, responses);
       for (const value of [dateLabel(row.observed_at), A.isScore(row.score) ? `${row.score}/100${A.comparableScore(row) ? '' : ' · 근거 부족'}` : '결측',
-        Number.isInteger(row.subjective_fatigue_nrs) ? `${row.subjective_fatigue_nrs}/10` : '미응답',
+        personal.score === null ? `대기 (${personal.samples}/5)` : `${personal.score}/100 · 이전 ${personal.samples}개`,
+        Number.isInteger(row.subjective_fatigue_nrs) ? `${row.subjective_fatigue_nrs}/10${row.subjective_source === 'response' ? ' · 최신' : ' · 이전 방식'}` : '미응답',
         row.confidence || '정보 없음', row.algorithm_version || '정보 없음']) tr.append(textNode('td', value));
       body.append(tr);
     }
   }
-  function renderData(allRows, expiresAt) {
-    const { real, synthetic } = A.partition(allRows);
+  function renderData(allRows, responses, expiresAt) {
+    const joined = A.attachResponses(allRows, responses);
+    const { real, synthetic } = A.partition(joined);
     const pairs = A.paired(real);
+    const newest = [...real].reverse().find(A.comparableScore);
+    const personal = newest ? A.personalized(newest, real, responses) : null;
     $('empty-state').hidden = real.length !== 0;
     const cards = [
       ['표식 없는 관측 후보', `${real.length}건`], ['점수 관측', `${real.filter(A.comparableScore).length}건`],
@@ -266,7 +271,11 @@
       const item = document.createElement('div'); item.className = 'summary-card';
       item.append(textNode('span', label), textNode('strong', value)); return item;
     }));
-    drawTimeline(real); drawDistance(real); drawNrs(real); renderContributions(real); renderQuality(real); renderTable(real);
+    $('personal-summary').textContent = newest ? personal.score === null
+      ? `최근 원점수 ${newest.score}/100 · 개인 기준 참고값은 이전의 유효 응답 5개부터 계산합니다 (현재 ${personal.samples}개).`
+      : `최근 원점수 ${newest.score}/100 · 개인 기준 참고 ${personal.score}/100 · 이전 응답 ${personal.samples}개만 사용했습니다.`
+      : '비교할 수 있는 점수가 아직 없습니다.';
+    drawTimeline(real); drawDistance(real); drawNrs(real); renderContributions(real); renderQuality(real); renderTable(real, responses);
     $('synthetic-panel').hidden = synthetic.length === 0;
     $('synthetic-count').textContent = `${synthetic.length}건 · 실제 분석에서 제외`;
     if (!editor) editor = window.EyeCareAlgorithmEditor.mount($('algorithm-root'), { rows: real, mode: 'private' });
@@ -282,6 +291,16 @@
     const rows = [];
     for (let offset = 0; offset < 5000; offset += 500) {
       const page = await rest(`/rest/v1/research_observations?owner_id=eq.${ownerId}&select=${columns}&order=observed_at.asc&limit=500&offset=${offset}`);
+      rows.push(...page);
+      if (page.length < 500) break;
+    }
+    return rows;
+  }
+  async function subjectiveResponses(ownerId) {
+    if (!canonicalUuid(ownerId)) throw new Error('Invalid owner ID');
+    const rows = [];
+    for (let offset = 0; offset < 5000; offset += 500) {
+      const page = await rest(`/rest/v1/research_subjective_responses?owner_id=eq.${ownerId}&select=id,report_id,subjective_fatigue_nrs,answered_at,received_at,previous_response_id&order=received_at.asc,id.asc&limit=500&offset=${offset}`);
       rows.push(...page);
       if (page.length < 500) break;
     }
@@ -315,7 +334,8 @@
       }
       persist(GRANT_KEY, { browser_id: session.user_id, expires_at: grant.expires_at });
       const rows = await observations(grant.owner_id);
-      renderData(rows, grant.expires_at);
+      const responses = await subjectiveResponses(grant.owner_id);
+      renderData(rows, responses, grant.expires_at);
       setStatus('linked', rows.length ? '이 브라우저에 승인된 연구 집계만 표시합니다.' : '연결됐습니다. 아직 자동 동기화된 기록이 없습니다.');
     } catch (error) {
       $('analysis').hidden = true;

@@ -63,6 +63,51 @@
     return rows.filter(row => comparableScore(row) && isNrs(row.subjective_fatigue_nrs));
   }
 
+  // A response is a separate immutable event. The latest server-received event
+  // replaces the old inline value for display, without changing the observation.
+  function attachResponses(rows, responses) {
+    const latest = new Map();
+    for (const answer of responses) {
+      if (!isNrs(answer.subjective_fatigue_nrs) || !Number.isFinite(Date.parse(answer.received_at))) continue;
+      const old = latest.get(answer.report_id);
+      if (!old || answer.received_at > old.received_at ||
+        (answer.received_at === old.received_at && answer.id > old.id)) latest.set(answer.report_id, answer);
+    }
+    return rows.map(row => {
+      const answer = latest.get(row.report_id);
+      return answer ? { ...row, subjective_fatigue_nrs: answer.subjective_fatigue_nrs,
+        subjective_source: 'response', subjective_received_at: answer.received_at } :
+        { ...row, subjective_source: isNrs(row.subjective_fatigue_nrs) ? 'inline' : null };
+    });
+  }
+
+  function personalized(target, rows, responses) {
+    if (!comparableScore(target)) return { score: null, samples: 0, offset: null };
+    const targetAt = Date.parse(target.observed_at);
+    const byReport = new Map(rows.map(row => [row.report_id, row]));
+    const latestPrior = new Map();
+    for (const answer of responses) {
+      const at = Date.parse(answer.received_at);
+      if (!isNrs(answer.subjective_fatigue_nrs) || !Number.isFinite(at) || at >= targetAt) continue;
+      const old = latestPrior.get(answer.report_id);
+      if (!old || answer.received_at > old.received_at ||
+        (answer.received_at === old.received_at && answer.id > old.id)) latestPrior.set(answer.report_id, answer);
+    }
+    const offsets = [...latestPrior.values()].flatMap(answer => {
+      const row = byReport.get(answer.report_id);
+      if (!row || !comparableScore(row) || row.algorithm_version !== target.algorithm_version) return [];
+      const measured = Date.parse(row.observed_at), answered = Date.parse(answer.answered_at);
+      if (!(measured < targetAt && measured <= answered && answered - measured <= 86400000)) return [];
+      return [answer.subjective_fatigue_nrs * 10 - row.score];
+    }).sort((a, b) => a - b);
+    if (offsets.length < 5) return { score: null, samples: offsets.length, offset: null };
+    const mid = Math.floor(offsets.length / 2);
+    const median = offsets.length % 2 ? offsets[mid] : (offsets[mid - 1] + offsets[mid]) / 2;
+    const raw = median * offsets.length / (offsets.length + 10);
+    const offset = Math.max(-12, Math.min(12, Math.sign(raw) * Math.floor(Math.abs(raw) + .5)));
+    return { score: Math.max(0, Math.min(100, target.score + offset)), samples: offsets.length, offset };
+  }
+
   function contributions(row) {
     const historical = row.algorithm_version !== 'efs-hypothesis-0.7';
     const old = [20, 10, 15, 20, 35];
@@ -92,6 +137,6 @@
     return 'waiting';
   }
 
-  return { domains, isSynthetic, partition, paired, contributions, peak, grantState,
+  return { domains, isSynthetic, partition, paired, attachResponses, personalized, contributions, peak, grantState,
     isScore, comparableScore, distanceSummary };
 });
