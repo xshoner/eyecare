@@ -54,7 +54,7 @@
       const valid = M.normalized(draft);
       const summary = node('section', 'algo-panel');
       summary.append(node('p', 'algo-kicker', mode === 'private' ? '내 연결 자료 · 이 브라우저 안에서만' : '합성 예시 · 공개 페이지'));
-      summary.append(node('h3', '', '현재안과 수정안 비교'));
+      summary.append(node('h3', '', '저장 영역의 가상 평균 비교'));
       const subtitle = mode === 'private'
         ? `연결된 본인 관측 ${real.length}건 중 최근 ${sample.length}건을 살펴봅니다. 실제 관측값은 저장하거나 전송하지 않습니다.`
         : '고정된 합성 사례입니다. 실제 건강 기록이나 학습 성능을 뜻하지 않습니다.';
@@ -64,7 +64,7 @@
       const wrapped = node('div', 'algo-table-wrap');
       const table = node('table', 'algo-table');
       const head = node('thead'); const hr = node('tr');
-      ['관측 시각', '저장된 원점수', '기준안 재계산', '수정안 가상점수', '가용 비중', 'NRS'].forEach(label => hr.append(node('th', '', label)));
+      ['관측 시각', '저장된 원점수', '과거 평균 가상값', '수정안 가상값', '가용 비중', 'NRS'].forEach(label => hr.append(node('th', '', label)));
       head.append(hr); table.append(head);
       const body = node('tbody');
       for (const row of sample) {
@@ -84,7 +84,7 @@
         td.colSpan = 6; tr.append(td); body.append(tr);
       }
       table.append(body); wrapped.append(table); summary.append(wrapped);
-      summary.append(node('p', 'algo-fine', '저장된 원점수에는 앱의 상황 보정이 포함될 수 있습니다. 서버에 원시 특징·보정 근거·개인 기준선이 없어 기준안 재계산도 완전한 복원이 아닙니다. 가상점수는 앱 점수나 DB 행을 변경하지 않습니다.'));
+      summary.append(node('p', 'algo-fine', '0.10 앱 점수는 관측 시간에 누적한 값으로, 서버 영역 평균만으로 복원할 수 없습니다. 과거 평균 가상값도 0.7/0.5의 완전한 복원이 아닙니다. 가상값은 앱 점수나 DB 행을 변경하지 않습니다.'));
       const pairs = sample.filter(row => isScore(row.score) && isNrs(row.subjective_fatigue_nrs)).length;
       summary.append(node('p', 'algo-fine', `점수와 NRS가 함께 있는 최근 표본: ${pairs}건. 이 수치로 가중치를 학습하거나 성능을 주장하지 않습니다.`));
       results.append(summary);

@@ -46,9 +46,9 @@
       <div id="summary" class="summary"></div>
       <section class="card personal-card" aria-labelledby="personal-title"><h3 id="personal-title">내 응답으로 맞춘 참고 점수</h3><label><input id="personal-toggle" type="checkbox" checked> 이 브라우저에서 개인 참고 점수 표시</label><p id="personal-summary"></p><p id="personal-validation" class="fine"></p><p class="fine">같은 산식 버전의 비교 가능한 이전 기록과 서버에 먼저 도착한 응답 5개 이상만 사용합니다. 중앙값 차이를 최대 12점까지 완만히 적용하며, 원래 점수나 연구 관측은 바꾸지 않습니다. 앱과 브라우저의 표시 선택은 서로 동기화되지 않습니다. 본인 체감과의 일치도이며 의료 진단 성능이 아닙니다.</p></section>
       <section class="card chart-card" aria-labelledby="timeline-title">
-        <div class="chart-head"><div><h3 id="timeline-title">점수 시계열</h3><p>결측 점수는 선으로 이어 추정하지 않습니다. 색과 표본 정보로 신뢰도를 함께 확인하세요.</p></div><strong id="peak-label"></strong></div>
+        <div class="chart-head"><div><h3 id="timeline-title">같은 산식 버전의 점수 시계열</h3><p>최신 산식 버전만 선으로 연결합니다. 결측이나 서로 다른 산식 점수를 이어 추정하지 않습니다.</p></div><strong id="peak-label"></strong></div>
         <div id="timeline" class="chart" role="img" aria-label="관측 시간에 따른 점수 그래프"></div>
-        <p class="fine">0.7/0.5의 가용 비중이 30% 이상인 같은 버전 점수만 비교·차트에 표시합니다. 이전 점수는 표에 근거 부족으로 남겨 둡니다.</p>
+        <p class="fine">0.10은 실제 관측 시간을 누적하는 연구용 노출 부담 표시이며 눈 건강 판정이 아닙니다. 화면·눈 등 근거가 빠진 행은 점수를 0이나 양호로 만들지 않습니다. 0.7/0.5의 이전 평균 점수는 원래 값과 버전을 보존해 표에서 확인합니다.</p>
       </section>
       <section class="card chart-card" aria-labelledby="distance-title">
         <div class="chart-head"><div><h3 id="distance-title">카메라 거리 추정</h3>
@@ -59,7 +59,7 @@
         <p class="fine">30 cm 미만은 관찰용 참고선입니다. 품질 수치는 프레임 품질과 시간 coverage를 이미 결합한 값이므로 다시 곱하지 않습니다. 빈 구간은 안전한 거리로 간주하지 않습니다.</p>
       </section>
       <div class="two-column">
-        <section class="card" aria-labelledby="contribution-title"><h3 id="contribution-title">영역별 영향</h3><p id="contribution-note" class="fine">영역 점수와 품질로 재구성한 기여도입니다. 앱의 원래 기본 점수나 상황 보정 점수는 서버에 저장되지 않아 표시하지 않습니다.</p><div id="contributions"></div></section>
+        <section class="card" aria-labelledby="contribution-title"><h3 id="contribution-title">영역별 관측 근거</h3><p id="contribution-note" class="fine">서버에는 누적 시간·교호작용 상세가 없어 0.10 원점수를 역산할 수 없습니다. 영역의 분당 부담률은 설명용 가상 재구성입니다.</p><div id="contributions"></div></section>
         <section class="card" aria-labelledby="nrs-title"><h3 id="nrs-title">주관적 피로 응답 비교</h3><p id="nrs-count" class="fine"></p><p class="fine">수정한 응답은 이전 응답을 지우지 않고 새 기록으로 동기화합니다. 차트에는 보고서별 최신 응답 하나만 사용합니다.</p><div id="nrs-chart" class="chart" role="img" aria-label="동일 보고서의 점수와 주관적 피로 응답 비교"></div></section>
       </div>
       <section class="card"><h3>자료 품질과 버전</h3><div id="quality-summary"></div><p class="fine">빈 값은 0이 아니라 관측되지 않았다는 뜻입니다. 개인 기준 참고값은 산식 버전마다 별도로 계산합니다.</p></section>

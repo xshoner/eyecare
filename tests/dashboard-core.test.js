@@ -52,7 +52,7 @@ test('distance uses valid minutes once and does not multiply composite quality b
 });
 
 test('reconstructed contributions respect missingness and effective quality weights', () => {
-  const rows = A.contributions({ screen_score: 80, screen_quality: 1,
+  const rows = A.contributions({ algorithm_version: 'efs-hypothesis-0.5', screen_score: 80, screen_quality: 1,
     environment_score: 20, environment_quality: .5,
     posture_score: null, posture_quality: null });
   assert.equal(rows.find(item => item.id === 'posture').reconstructedPoints, null);
@@ -124,4 +124,21 @@ test('forward validation uses held-out first receipts and reports missing eviden
     received_at: '2026-10-12T08:00:00Z' };
   assert.deepEqual(A.validation(rows, [...responses, correction]), result);
   assert.equal(A.validation(rows, []).rawMae, null);
+});
+
+test('new exposure version keeps partial missingness and reports rate rather than cumulative score', () => {
+  const row = { algorithm_version: 'efs-exposure-0.10', score: 48, confidence: 'partial',
+    screen_score: 70, screen_quality: .7, environment_score: 80, environment_quality: .6,
+    posture_score: null, posture_quality: null, usage_score: 60, usage_quality: .6,
+    eyes_score: null, eyes_quality: null, observed_at: '2026-10-11T12:00:00Z' };
+  assert.equal(A.comparableScore(row), true);
+  const parts = A.contributions(row);
+  assert.equal(parts.find(p => p.id === 'screen').reconstructedPoints, 18.2);
+  assert.equal(parts.find(p => p.id === 'eyes').reconstructedPoints, null);
+  assert.equal(parts[0].kind, 'rate');
+  assert.equal(A.comparableScore({ ...row, score: null, confidence: 'unavailable', screen_score: null }), false);
+  const old = { ...row, algorithm_version: 'efs-hypothesis-0.7',
+    observed_at: '2026-10-11T11:00:00Z' };
+  assert.deepEqual(A.newestVersionRows([old, row]), [row]);
+  assert.deepEqual(A.newestVersionRows([row, old]), [row]);
 });

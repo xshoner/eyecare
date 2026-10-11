@@ -16,7 +16,7 @@
   const isNrs = value => Number.isInteger(value) && value >= 0 && value <= 10;
   const finite = (value, low, high) => typeof value === 'number' && Number.isFinite(value) &&
     value >= low && value <= high;
-  const scoreWeights = version => version === 'efs-hypothesis-0.7' ? [26, 22, 8, 18, 26]
+  const scoreWeights = version => ['efs-hypothesis-0.7', 'efs-exposure-0.10'].includes(version) ? [26, 22, 8, 18, 26]
     : version === 'efs-hypothesis-0.5' ? [20, 10, 15, 20, 35] : null;
 
   // Mirrors the app's >=30% available-weight gate. Older rows with no quality evidence
@@ -24,6 +24,13 @@
   function comparableScore(row) {
     const weights = scoreWeights(row.algorithm_version);
     if (!isScore(row.score) || !weights) return false;
+    if (row.algorithm_version === 'efs-exposure-0.10') {
+      // The phone has already gated its complete score. Do not infer one from partial
+      // domain rows; the daily time integral and interaction are not sent to the server.
+      return ['partial', 'adequate'].includes(row.confidence) &&
+        isScore(row.screen_score) && isScore(row.usage_score) &&
+        (isScore(row.environment_score) || isScore(row.eyes_score));
+    }
     const available = domains.reduce((sum, domain, i) => {
       const quality = row[`${domain.id}_quality`];
       return sum + (finite(quality, 0, 1) ? weights[i] * quality : 0);
@@ -145,7 +152,8 @@
   }
 
   function contributions(row) {
-    const historical = row.algorithm_version !== 'efs-hypothesis-0.7';
+    const cumulative = row.algorithm_version === 'efs-exposure-0.10';
+    const historical = row.algorithm_version === 'efs-hypothesis-0.5';
     const old = [20, 10, 15, 20, 35];
     const observed = domains.map((domain, index) => {
       const weight = historical ? old[index] : domain.weight;
@@ -157,13 +165,22 @@
     });
     const total = observed.reduce((sum, item) => sum + item.effectiveWeight, 0);
     return observed.map(item => ({ ...item,
-      reconstructedPoints: item.score === null || total === 0 ? null : item.effectiveWeight / total * item.score
+      reconstructedPoints: item.score === null || total === 0 ? null : cumulative
+        ? item.weight * item.score / 100 : item.effectiveWeight / total * item.score,
+      kind: cumulative ? 'rate' : 'historical_mean'
     }));
   }
 
   function peak(rows) {
     return rows.filter(comparableScore).reduce((best, row) =>
       !best || row.score > best.score ? row : best, null);
+  }
+
+  function newestVersionRows(rows) {
+    const dated = rows.filter(row => Number.isFinite(Date.parse(row.observed_at)))
+      .sort((a, b) => Date.parse(a.observed_at) - Date.parse(b.observed_at));
+    const version = dated.at(-1)?.algorithm_version;
+    return version ? dated.filter(row => row.algorithm_version === version) : [];
   }
 
   function grantState(previous, grant, now = Date.now()) {
@@ -174,6 +191,6 @@
   }
 
   return { domains, isSynthetic, partition, paired, attachResponses, personalized, validation,
-    contributions, peak, grantState,
+    contributions, peak, newestVersionRows, grantState,
     isScore, comparableScore, distanceSummary };
 });

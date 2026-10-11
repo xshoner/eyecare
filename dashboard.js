@@ -94,7 +94,7 @@
   function drawTimeline(rows) {
     const root = $('timeline');
     root.replaceChildren();
-    const dated = rows.filter(row => !Number.isNaN(Date.parse(row.observed_at)));
+    const dated = A.newestVersionRows(rows);
     const scored = dated.filter(A.comparableScore);
     if (!scored.length) {
       root.append(textNode('p', '점수가 있는 실제 관측이 아직 없습니다.', 'empty-inline'));
@@ -138,7 +138,7 @@
       svg.append(point);
     });
     root.append(svg);
-    $('peak-label').textContent = `최대 ${highest.score}점 · ${dateLabel(highest.observed_at)}`;
+    $('peak-label').textContent = `${highest.algorithm_version} · 이 버전 최대 ${highest.score}점 · ${dateLabel(highest.observed_at)}`;
   }
   function drawDistance(rows) {
     const root = $('distance-timeline'); root.replaceChildren();
@@ -188,7 +188,7 @@
     flush(); root.append(svg);
   }
   function drawNrs(rows) {
-    const pairs = A.paired(rows);
+    const pairs = A.paired(A.newestVersionRows(rows));
     $('nrs-count').textContent = `같은 보고서에서 점수와 NRS가 모두 있는 관측 ${pairs.length}건. 서로 다른 척도이므로 임상 정확도로 해석하지 않습니다.`;
     const root = $('nrs-chart');
     root.replaceChildren();
@@ -223,12 +223,14 @@
       const line = document.createElement('div'); line.className = 'contribution';
       const heading = document.createElement('div'); heading.className = 'contribution-heading';
       heading.append(textNode('strong', item.label), textNode('span', item.reconstructedPoints === null ? '관측 없음'
-        : `${item.reconstructedPoints.toFixed(1)}점 재구성 · 품질 ${Math.round(item.quality * 100)}%`));
+        : `${item.reconstructedPoints.toFixed(1)}${item.kind === 'rate' ? '%p/관측분' : '점 가상 재구성'} · 품질 ${Math.round(item.quality * 100)}%`));
       const track = document.createElement('div'); track.className = 'track';
       const fill = document.createElement('div'); fill.style.width = `${item.score ?? 0}%`;
       track.append(fill); line.append(heading, track); root.append(line);
     }
-    $('contribution-note').textContent = `${dateLabel(last.observed_at)} 관측 기준. 영역 점수·품질과 ${last.algorithm_version}의 명목 가중치로 기여도를 재구성했습니다. 정확한 기본 점수·상황 보정은 서버에 저장되지 않아 추정하지 않습니다.`;
+    $('contribution-note').textContent = last.algorithm_version === 'efs-exposure-0.10'
+      ? `${dateLabel(last.observed_at)} 관측 기준. 영역의 분당 부담률 중 관측된 부분만 가상 재구성했습니다. 하루 누적 관측 시간·교호작용의 전체 적분은 서버에 없어 저장 점수를 역산할 수 없습니다. 결측은 낮은 부담이 아닙니다.`
+      : `${dateLabel(last.observed_at)} 관측 기준. ${last.algorithm_version}의 품질 가중 평균을 가상 재구성했습니다. 과거 원점수·버전은 변경하지 않습니다.`;
   }
   function renderQuality(rows) {
     const root = $('quality-summary'); root.replaceChildren();
@@ -244,7 +246,7 @@
     root.append(textNode('p', `알고리즘 버전: ${[...versions].map(([name, n]) => `${name} ${n}건`).join(' · ')}`));
     root.append(textNode('p', `신뢰도: ${[...confidence].map(([name, n]) => `${name} ${n}건`).join(' · ')}`));
     root.append(textNode('p', `영역 점수 결측 ${missing}개 · 추정 표시 필드 ${estimated}개 (관측 전체 기준)`));
-    root.append(textNode('p', `비교 가능한 점수 ${rows.filter(A.comparableScore).length}개 · 저장 점수 ${rows.filter(row => A.isScore(row.score)).length}개. 0.7/0.5는 가용 비중 30% 이상만 차트·NRS·최고점에 사용합니다.`));
+    root.append(textNode('p', `비교 가능한 점수 ${rows.filter(A.comparableScore).length}개 · 저장 점수 ${rows.filter(row => A.isScore(row.score)).length}개. 0.10은 화면·사용과 추가 영역 근거가 있는 저장 점수만, 0.7/0.5는 당시 가용 비중 30% 이상만 비교에 사용합니다. 시계열은 최신 한 산식 버전만 연결합니다.`));
   }
   function renderTable(rows, responses) {
     const body = $('observations-body'); body.replaceChildren();
