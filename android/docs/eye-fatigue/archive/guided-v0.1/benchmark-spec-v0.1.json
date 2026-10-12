@@ -1,0 +1,99 @@
+{
+  "schema": "eyecare-fatigue-benchmark-plan-1",
+  "version": "0.1-draft",
+  "date": "2026-10-10",
+  "status": "design-only-not-a-validated-model-or-locked-protocol",
+  "baselineApp": "0.2.1-alpha",
+  "neurolensReferenceCommit": "05ee0f80c46d78fdc840c19dc66f0d6717c50377",
+  "primaryTarget": {
+    "id": "ocular-fatigue-now-nrs-v1",
+    "question": "지금 눈이 얼마나 피곤한가요?",
+    "scale": { "minimum": 0, "maximum": 10 },
+    "existingDiscomfortScale": "preserve-0-to-4-separately",
+    "currentTargetMayBeInput": false
+  },
+  "modes": {
+    "first": "A-pre-post-standard-screen",
+    "research": "B-in-app-simultaneous",
+    "conditional": "C-other-app-simultaneous",
+    "desktopBenchmark": "D-webcam-research"
+  },
+  "referenceTask": {
+    "id": "eyecare-reference-v0.1",
+    "repeatDurationSeconds": 100,
+    "firstCalibrationExtraSecondsApprox": 60,
+    "steps": [
+      { "id": "quality-setup", "seconds": 10 },
+      { "id": "neutral-natural-viewing", "seconds": 60 },
+      { "id": "fixation-validation", "seconds": 15 },
+      { "id": "smooth-pursuit", "seconds": 15 }
+    ],
+    "blinkSuppressionInstructions": false,
+    "rapidFlashingStimulus": false
+  },
+  "sampling": {
+    "existingScreenMaxFps": 2,
+    "frontCameraTargetFps": 30,
+    "useObservedTimestamps": true,
+    "recordDroppedFrames": true,
+    "rawRgbForRppg": true,
+    "inferMissingEyeEvents": false
+  },
+  "initialEngineeringTargets": {
+    "areMedicalCutoffs": false,
+    "areAchievedResults": false,
+    "eyeValidCoverageMinimum": 0.8,
+    "eyeMedianIntervalMsMaximum": 50,
+    "eyeP95IntervalMsMaximum": 100,
+    "blinkF1Minimum": 0.9,
+    "blinkPrecisionRecallMinimum": 0.85,
+    "blinkEventMatchToleranceMs": 100,
+    "blinkDurationMaeMsMaximumHighRateReference": 50,
+    "incompleteBlinkF1Minimum": 0.8,
+    "closureFractionMaePercentagePointsMaximum": 5,
+    "gazeMedianTargetProxyErrorLongSideFractionMaximum": 0.08,
+    "gazeP95TargetProxyErrorLongSideFractionMaximum": 0.15,
+    "gazeZoneMacroF1Minimum": 0.8,
+    "rppgValidSecondsMinimumInNeutral60s": 45,
+    "rppgHrMaeBpmMaximum": 5,
+    "rppgHrP95AbsoluteErrorBpmMaximum": 10,
+    "rppgOutputCoverageMinimum": 0.7,
+    "rppgNoPulseControlFalseAcceptanceMaximum": 0.05,
+    "fatigueNrsMaeMaximum": 1.5,
+    "fullModelRelativeMaeGainOverScreenModelMinimum": 0.15,
+    "fatigueOutputCoverageMinimum": 0.7
+  },
+  "modelComparisons": {
+    "M0": ["elapsed-time", "task-context", "past-or-pre-response"],
+    "M1": ["M0", "screen-features-with-quality"],
+    "M2": ["M1", "eye-events-and-aperture"],
+    "M3": ["M2", "validated-gaze-features"],
+    "M4": ["M3", "validated-rppg-features"],
+    "leaveOneSignalOutRequired": true,
+    "validatedMissingModalityModelsRequired": true
+  },
+  "cohortPlan": {
+    "technicalPilotAdults": 12,
+    "repeatabilityPilotAdults": 30,
+    "modelStudyAdultsInitialPlan": 120,
+    "modelTrainAdults": 60,
+    "modelValidationAdults": 20,
+    "modelNewLockedTestAdults": 40,
+    "externalAdultsMinimumPlan": 20,
+    "formalSampleSizeRequiresPilotAndStatisticalReview": true,
+    "splitByParticipant": true,
+    "personalizationRequiresSeparateFutureVisitEvaluation": true
+  },
+  "rppgScope": {
+    "firstOutput": "heart-rate-from-neutral-reference",
+    "hrvDefaultEnabled": false,
+    "hrOnlyReferenceValidatesBeatTiming": false,
+    "hrvRequiresSeparateBeatReferenceStudy": true
+  },
+  "storage": {
+    "productDefault": "numeric-features-and-summary",
+    "researchVideoRequiresSeparateConsent": true,
+    "plannedExportSchema": 3,
+    "preserveExistingSchema1And2": true
+  }
+}

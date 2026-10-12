@@ -1,0 +1,295 @@
+{
+  "schema": "eyecare-passive-fatigue-plan-2",
+  "version": "0.2-draft",
+  "date": "2026-10-10",
+  "status": "design-only-not-implemented-not-validated",
+  "activeProductSpec": true,
+  "baselineApp": "0.2.1-alpha",
+  "neurolensReferenceCommit": "05ee0f80c46d78fdc840c19dc66f0d6717c50377",
+  "documents": {
+    "prd": "../../EyeCare_PASSIVE_PRD_2026-10-10.md",
+    "engine": "../../EyeCare_FATIGUE_DESIGN_2026-10-10.md",
+    "benchmark": "BENCHMARK_PROTOCOL.md",
+    "implementation": "IMPLEMENTATION_PLAN.md"
+  },
+  "userWorkflow": {
+    "perUseCalibration": false,
+    "faceAngleAlignment": false,
+    "distanceAlignment": false,
+    "standardReferenceScreen": false,
+    "gazeTargets": false,
+    "mandatorySymptomResponse": false,
+    "oneTimeConsentEnablesPermanentCapture": false
+  },
+  "platform": {
+    "primaryMode": "automatic-observation-within-user-started-active-foreground-services",
+    "projectionConsent": "each-new-session",
+    "startCameraServiceFromVisibleApp": true,
+    "projectionTokenReuse": false,
+    "unattendedResumeAfterProjectionStops": false,
+    "cameraResourceReacquisitionStatus": "requires-device-spike",
+    "cameraResourceReacquisitionIsServiceRecreation": false,
+    "stops": [
+      "user-stop",
+      "projection-stopped",
+      "screen-lock",
+      "severe-thermal",
+      "process-death"
+    ],
+    "interruptionCreatesNewCaptureEpoch": true,
+    "storeApprovalConfirmed": false
+  },
+  "time": {
+    "checkpointSeconds": 1800,
+    "subsequentCheckpointIntervalSeconds": 900,
+    "shortInterruptionSeconds": 120,
+    "shortInterruptionCountsAsUse": false,
+    "bridgeEndedProjectionForEyeChange": false,
+    "sourceTime": "monotonic-with-verified-camera-alignment",
+    "currentAppHardStopSeconds": 1800,
+    "plannedHardStopAtCheckpoint": false,
+    "distinguish": [
+      "continuous-use",
+      "screen-valid",
+      "screen-excluded",
+      "camera-open",
+      "eye-valid",
+      "pulse-valid",
+      "unknown-use"
+    ]
+  },
+  "passiveSampling": {
+    "screenMaxFps": 2,
+    "screenLongSidePixels": 256,
+    "screenPairMaxIntervalMs": 1500,
+    "cameraResolutionStartingCandidate": [
+      640,
+      480
+    ],
+    "cameraSupplyTargetFps": 30,
+    "landmarkFpsCandidates": [
+      15,
+      30
+    ],
+    "observedTimestampsRequired": true,
+    "baseline": {
+      "startSeconds": 0,
+      "endSeconds": 180,
+      "burstSeconds": 60,
+      "retryDeadlineSeconds": 300
+    },
+    "periodic": {
+      "atUseSeconds": [
+        300,
+        600,
+        900,
+        1200,
+        1500
+      ],
+      "burstSeconds": 45
+    },
+    "endpoint": {
+      "startSeconds": 1620,
+      "endSeconds": 1800,
+      "burstSeconds": 60,
+      "retryDeadlineSeconds": 1980
+    },
+    "scheduledCameraSecondsFirst30Minutes": 345,
+    "cameraOpenBudget": {
+      "rollingWindowSeconds": 1800,
+      "maxOpenSeconds": 540,
+      "status": "target-only-device-feasibility-unverified"
+    },
+    "trigger": {
+      "source": "valid-existing-high-change-duration",
+      "lookbackSeconds": 60,
+      "minimumHighChangeSeconds": 20,
+      "burstSeconds": 45
+    },
+    "mergeOverlappingTriggers": true,
+    "reserveEndpointBudget": true,
+    "eyesMustBeObservedBeforeTriggerForBaseline": true,
+    "pair": {
+      "minimumEyeValidSecondsEach": 30,
+      "minimumEyeValidFractionEach": 0.5,
+      "featureComparableMask": true,
+      "lateBaselineAfterSeconds": 300
+    },
+    "rawFramesSavedByDefault": false,
+    "inferEyeEventsAcrossGaps": false,
+    "normalizeUsingSameFrozenBaselineWithinComparison": true
+  },
+  "targets": {
+    "primary": {
+      "id": "ocular-fatigue-now-nrs-v1",
+      "minimum": 0,
+      "maximum": 10
+    },
+    "change": {
+      "id": "ocular-fatigue-nrs-change-30min-v1",
+      "minimum": -10,
+      "maximum": 10
+    },
+    "scoreDisplay": {
+      "minimum": 0,
+      "maximum": 100,
+      "multiplierFromPredictedNrs": 10
+    },
+    "currentResearchResponseMayBeInput": false,
+    "preResearchResponseRequiredByProductModel": false,
+    "existingDiscomfortScale": "preserve-0-to-4-separately",
+    "researchLabelsOptionalForProduct": true
+  },
+  "model": {
+    "deployment": "one-selected-lightweight-numeric-model",
+    "inputMissingnessMasks": true,
+    "inputQualityAndCoverage": true,
+    "inputPoseAndLightContext": true,
+    "causalPersonalBaseline": true,
+    "noRestedZeroAssumption": true,
+    "maximumInitialCoreFeatures": 12,
+    "calibrationTasks": false,
+    "modalityDropoutTraining": true,
+    "outputModes": [
+      "ocular-response",
+      "exposure-estimate",
+      "insufficient-evidence"
+    ],
+    "invalidScoreValue": null,
+    "eyeChangeRequiresValidObservedPair": true,
+    "uncertaintyIntervalNominalCoverage": 0.9,
+    "activation": "shadow-until-independent-evaluation",
+    "comparisons": {
+      "M0": [
+        "usage-time",
+        "task-estimate",
+        "basic-context"
+      ],
+      "M1": [
+        "M0",
+        "screen-features",
+        "ambient-light",
+        "quality"
+      ],
+      "M2": [
+        "M1",
+        "eye-aperture",
+        "blink",
+        "closure",
+        "passive-change"
+      ],
+      "M3": [
+        "M2",
+        "eye-head-direction-proxy",
+        "distance-habit-candidate"
+      ],
+      "M4": [
+        "M3",
+        "validated-pulse-features"
+      ]
+    },
+    "removeSignalIfCostWithoutUsefulGain": true
+  },
+  "semanticLimits": {
+    "preciseUncalibratedScreenFixationClaim": false,
+    "visualAcuityFromDistance": false,
+    "distanceOutput": "validated-category-or-within-person-relative-habit",
+    "elapsedTimeIsMediaPlaybackOrGazeTime": false,
+    "digitalLumaIsOpticalLuxOrPwm": false,
+    "indoorOutdoorIsCertainFromTimeAndLux": false,
+    "longEyeClosureIsEyeFatigueGroundTruth": false
+  },
+  "rppg": {
+    "firstOutput": "optional-heart-rate-feature-during-stable-natural-use",
+    "methods": [
+      "POS",
+      "CHROM",
+      "multi-ROI-quality-consensus"
+    ],
+    "stableWindowSeconds": [
+      30,
+      60
+    ],
+    "originalRgbRequired": true,
+    "screenIlluminationContaminationCheck": true,
+    "mandatoryPopulationWideHrCoverage": false,
+    "hrvDefaultEnabled": false,
+    "futureWindowRepairAllowedOnline": false,
+    "syntheticBenchProvesHumanAccuracy": false
+  },
+  "initialEngineeringTargets": {
+    "areAchieved": false,
+    "areMedicalCutoffs": false,
+    "lockAfterPilotBeforeIndependentTest": true,
+    "mandatoryUserAlignmentCount": 0,
+    "pairedCoverageActiveSessionsMinimum": 0.7,
+    "blinkPrecisionMinimum": 0.85,
+    "blinkRecallMinimum": 0.85,
+    "blinkF1Minimum": 0.85,
+    "blinkDurationMaeMsMaximum": 80,
+    "closureFractionMaePercentagePointsMaximum": 8,
+    "directionStabilityProxyMacroF1Minimum": 0.75,
+    "rppgHrMaeBpmMaximum": 5,
+    "rppgHrP95AbsoluteErrorBpmMaximum": 10,
+    "rppgNegativeControlFalseAcceptanceMaximum": 0.05,
+    "currentNrsMaeMaximum": 1.5,
+    "changeNrsMaeMaximum": 1.5,
+    "eyeModelRelativeMaeGainOverScreenBaselineMinimum": 0.1,
+    "numericBufferMiBMaximum": 20,
+    "additionalPssMiBMaximum": 80,
+    "totalPssMiBMaximum": 180,
+    "additionalBatteryPercentagePointsPerHourMedianMaximum": 5,
+    "incompleteBlinkAndDistanceTargets": "define-from-pilot-label-quality"
+  },
+  "benchmark": {
+    "primaryWorkflow": "30-minute-natural-use-without-alignment-or-reference-screen",
+    "lightBinsLux": [
+      0,
+      5,
+      50,
+      300,
+      null
+    ],
+    "technicalPilotAdults": 12,
+    "repeatabilityPilotAdults": 30,
+    "repeatabilityVisitsPerAdult": 4,
+    "studyAdults": 120,
+    "studyVisitsPerAdult": 2,
+    "trainAdults": 60,
+    "validationAdults": 20,
+    "newLockedTestAdults": 40,
+    "externalAdultsMinimumPlan": 20,
+    "splitByParticipant": true,
+    "pilotParticipantsInLockedTest": false,
+    "formalSampleSizeRequiresPilot": true,
+    "personalizationRequiresFutureVisitTest": true,
+    "reportAllIntendedSessionsAndActiveSessionsSeparately": true,
+    "faceNotVisibleRemainsInCoverageDenominator": true,
+    "reportErrorVersusCoverage": true,
+    "pairedLabelEndpointToleranceSeconds": 180
+  },
+  "alert": {
+    "preValidation": "time-and-observed-facts-only",
+    "timeCheckpointSeconds": 1800,
+    "minimumRepeatIntervalSeconds": 1800,
+    "defaultDailyRestAlertMaximum": 4,
+    "fatigueChangeRequiredConsecutiveValidOutputs": 2,
+    "fatigueThreshold": "lock-from-validation-and-user-cost",
+    "sessionAlertMute": true,
+    "sessionRestartNoticeSeparate": true
+  },
+  "storage": {
+    "productDefault": "numeric-features-and-summary-on-device",
+    "plannedExportSchema": 3,
+    "preserveExistingSchema": [
+      1,
+      2
+    ],
+    "localRetentionDays": 30,
+    "featureRetentionCleanupTiming": "explicitly-implement-and-report",
+    "exportInitiatedByUser": true,
+    "aggregateAutomaticallyAfterPcReceivesExport": true,
+    "researchVideoRequiresSeparateConsent": true,
+    "researchDataSeparateFromUserInbox": true
+  }
+}

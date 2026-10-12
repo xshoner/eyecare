@@ -1,0 +1,9 @@
+<resources>
+    <style name="Theme.EyeCare" parent="android:Theme.DeviceDefault.DayNight">
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowBackground">@color/window_background</item>
+        <item name="android:colorAccent">#1F6F5C</item>
+        <item name="android:windowActionModeOverlay">true</item>
+    </style>
+</resources>

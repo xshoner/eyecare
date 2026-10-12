@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
+    <!-- Eye outline -->
+    <path android:strokeColor="#FFFFFF" android:strokeWidth="5" android:strokeLineCap="round" android:strokeLineJoin="round"
+        android:fillColor="#00000000" android:pathData="M31,56 Q54,30 77,56 Q54,82 31,56 Z" />
+    <!-- Iris -->
+    <path android:fillColor="#FFFFFF" android:pathData="M54,47 A9,9 0 1,1 53.99,47 Z" />
+    <!-- Leaf (rest) above the eye -->
+    <path android:fillColor="#BFEBD9" android:pathData="M60,40 Q61,27 75,26 Q74,40 60,40 Z" />
+</vector>
