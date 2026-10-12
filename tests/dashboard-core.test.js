@@ -191,3 +191,18 @@ test('response CSV lists every revision in receipt order', () => {
   assert.equal(lines[1], 'a,r1,4,t1,2026-10-12T01:06:00Z,');
   assert.equal(lines[2], 'b,r1,7,t2,2026-10-12T01:11:00Z,a');
 });
+
+test('deduction-model reports are comparable when adequate and show the five-band condition', () => {
+  const adequate = { algorithm_version: 'efs-deduction-0.15', score: 45, confidence: 'adequate', subjective_fatigue_nrs: 6 };
+  const partial = { algorithm_version: 'efs-deduction-0.15', score: 10, confidence: 'partial', subjective_fatigue_nrs: 2 };
+  const previous = { algorithm_version: 'efs-deduction-0.14', score: 81, confidence: 'adequate' };
+  assert.equal(A.comparableScore(adequate), true);
+  assert.equal(A.comparableScore(partial), false);
+  assert.equal(A.comparableScore(previous), true);
+  assert.deepEqual(A.paired([adequate, partial]), [adequate]);
+  assert.deepEqual(A.condition(adequate), { value: 55, band: '보통' });
+  assert.deepEqual(A.condition(previous), { value: 19, band: '위험' });
+  assert.deepEqual(A.condition({ score: 0 }), { value: 100, band: '매우 양호' });
+  assert.equal(A.condition({ score: null }), null);
+  assert.equal(A.contributions(adequate)[0].kind, 'rate');
+});

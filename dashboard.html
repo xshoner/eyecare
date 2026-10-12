@@ -48,7 +48,7 @@
       <section class="card chart-card" aria-labelledby="timeline-title">
         <div class="chart-head"><div><h3 id="timeline-title">같은 산식 버전의 점수 시계열</h3><p>최신 산식 버전만 선으로 연결합니다. 결측이나 서로 다른 산식 점수를 이어 추정하지 않습니다.</p></div><strong id="peak-label"></strong></div>
         <div id="timeline" class="chart" role="img" aria-label="관측 시간에 따른 점수 그래프"></div>
-        <p class="fine">0.11은 현재 확인된 영역의 고정 비중 기여도를 부분 점수로 저장합니다. 빠진 영역은 0으로 채우지 않으며 비교 그래프에서는 근거가 충분한 행만 연결합니다. 오늘의 누적 부담은 앱에 별도로 표시합니다. 0.10 누적 점수 및 0.7/0.5 이전 평균 점수는 버전별로 분리해 보존합니다.</p>
+        <p class="fine">감점 모델(0.14·0.15)의 점수는 오늘 누적 감점이며, 높을수록 눈 컨디션이 낮습니다(눈 컨디션 = 100 − 점수). 0.14와 0.15는 감점률이 달라 서로 다른 선으로 다룹니다. 0.11은 현재 확인된 영역의 고정 비중 기여도를 부분 점수로 저장합니다. 빠진 영역은 0으로 채우지 않으며 비교 그래프에서는 근거가 충분한 행만 연결합니다. 오늘의 누적 부담은 앱에 별도로 표시합니다. 0.10 누적 점수 및 0.7/0.5 이전 평균 점수는 버전별로 분리해 보존합니다.</p>
       </section>
       <section class="card chart-card" aria-labelledby="distance-title">
         <div class="chart-head"><div><h3 id="distance-title">카메라 거리 추정</h3>
@@ -63,7 +63,7 @@
         <section class="card" aria-labelledby="nrs-title"><h3 id="nrs-title">주관적 피로 응답 비교</h3><p id="nrs-count" class="fine"></p><p class="fine">수정한 응답은 이전 응답을 지우지 않고 새 기록으로 동기화합니다. 차트에는 보고서별 최신 응답 하나만 사용합니다.</p><div id="nrs-chart" class="chart" role="img" aria-label="동일 보고서의 점수와 주관적 피로 응답 비교"></div></section>
       </div>
       <section class="card"><h3>자료 품질과 버전</h3><div id="quality-summary"></div><p class="fine">빈 값은 0이 아니라 관측되지 않았다는 뜻입니다. 개인 기준 참고값은 산식 버전마다 별도로 계산합니다.</p></section>
-      <section class="card"><div class="chart-head"><h3>최근 관측</h3><div class="export-actions"><button id="export-observations" type="button">관측 CSV 다운로드</button><button id="export-responses" type="button">피로 응답 CSV 다운로드</button></div></div><p class="fine">CSV에는 이 브라우저가 읽을 수 있는 전체 관측이 들어갑니다. 합성 테스트 행은 synthetic 열로 구분합니다. score는 저장된 부담 점수이고, condition_score는 앱 0.12에서 보이는 눈 컨디션(100 − score)입니다. 빈칸은 측정되지 않았다는 뜻이며 0점이 아닙니다.</p><div class="table-scroll"><table><thead><tr><th>관측 시각</th><th>원점수</th><th>개인 기준 참고</th><th>피로 응답</th><th>신뢰도</th><th>알고리즘</th></tr></thead><tbody id="observations-body"></tbody></table></div></section>
+      <section class="card"><div class="chart-head"><h3>최근 관측</h3><div class="export-actions"><button id="export-observations" type="button">관측 CSV 다운로드</button><button id="export-responses" type="button">피로 응답 CSV 다운로드</button></div></div><p class="fine">CSV에는 이 브라우저가 읽을 수 있는 전체 관측이 들어갑니다. 합성 테스트 행은 synthetic 열로 구분합니다. score는 저장된 부담 점수이고, condition_score는 앱 0.12에서 보이는 눈 컨디션(100 − score)입니다. 빈칸은 측정되지 않았다는 뜻이며 0점이 아닙니다.</p><div class="table-scroll"><table><thead><tr><th>관측 시각</th><th>원점수</th><th>눈 컨디션</th><th>개인 기준 참고</th><th>피로 응답</th><th>신뢰도</th><th>알고리즘</th></tr></thead><tbody id="observations-body"></tbody></table></div></section>
       <section id="synthetic-panel" class="card synthetic" hidden><h3>합성 API 테스트 기록</h3><p id="synthetic-count"></p><p class="fine">합성 기록은 실제 관측 그래프와 비교 계산에서 제외했습니다.</p></section>
       <div class="section-head"><div><span class="kicker">03 / PRIVATE WHAT-IF</span><h2>내 지표로 가상 비교</h2></div></div>
       <p class="fine">원점수는 보존됩니다. 편집 설정만 이 브라우저에 남고, 관측 자료는 서버로 다시 쓰지 않습니다.</p>

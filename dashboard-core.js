@@ -16,6 +16,16 @@
   const isNrs = value => Number.isInteger(value) && value >= 0 && value <= 10;
   const finite = (value, low, high) => typeof value === 'number' && Number.isFinite(value) &&
     value >= low && value <= high;
+  // App 0.14+ deduction model: score = today's accumulated deduction (100 − eye condition).
+  const DEDUCTION_VERSIONS = ['efs-deduction-0.14', 'efs-deduction-0.15'];
+  const isDeduction = version => DEDUCTION_VERSIONS.includes(version);
+  // The app's five display bands on the condition scale (higher = better).
+  const BANDS = [[80, '매우 양호'], [60, '양호'], [40, '보통'], [20, '주의'], [0, '위험']];
+  function condition(row) {
+    if (!isScore(row.score)) return null;
+    const value = 100 - row.score;
+    return { value, band: BANDS.find(([low]) => value >= low)[1] };
+  }
   const scoreWeights = version => ['efs-hypothesis-0.7', 'efs-exposure-0.10', 'efs-exposure-0.11'].includes(version) ? [26, 22, 8, 18, 26]
     : version === 'efs-hypothesis-0.5' ? [20, 10, 15, 20, 35] : null;
 
@@ -23,6 +33,11 @@
   // retain their stored scores in the table, but cannot support a trend comparison.
   function comparableScore(row) {
     const weights = scoreWeights(row.algorithm_version);
+    if (isDeduction(row.algorithm_version)) {
+      // The phone marks a deduction report adequate only when at least half of its window
+      // measured two or more of light, distance and screen stimulation.
+      return isScore(row.score) && row.confidence === 'adequate';
+    }
     if (!isScore(row.score) || !weights) return false;
     if (row.algorithm_version === 'efs-exposure-0.10') {
       // The phone has already gated its complete score. Do not infer one from partial
@@ -160,7 +175,8 @@
   }
 
   function contributions(row) {
-    const exposure = ['efs-exposure-0.10', 'efs-exposure-0.11'].includes(row.algorithm_version);
+    const exposure = ['efs-exposure-0.10', 'efs-exposure-0.11'].includes(row.algorithm_version) ||
+      isDeduction(row.algorithm_version);
     const historical = row.algorithm_version === 'efs-hypothesis-0.5';
     const old = [20, 10, 15, 20, 35];
     const observed = domains.map((domain, index) => {
@@ -237,7 +253,7 @@
     return 'waiting';
   }
 
-  return { domains, isSynthetic, partition, paired, attachResponses, personalized, validation,
+  return { domains, isSynthetic, isDeduction, condition, DEDUCTION_VERSIONS, partition, paired, attachResponses, personalized, validation,
     contributions, peak, newestVersionRows, grantState,
     isScore, comparableScore, distanceSummary, observationsCsv, responsesCsv };
 });

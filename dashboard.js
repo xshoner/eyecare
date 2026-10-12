@@ -133,12 +133,15 @@
       const point = svgNode('circle', { cx: x, cy: y, r: row === highest ? 6 : 4.5,
         class: `score-dot ${row.confidence === 'adequate' ? 'adequate' : 'partial'}` });
       const title = svgNode('title');
-      title.textContent = `${dateLabel(row.observed_at)} · ${row.score}점 · ${row.confidence || '품질 정보 없음'}`;
+      const shown = A.isDeduction(row.algorithm_version) ? ` · 눈 컨디션 ${A.condition(row).value}점 ${A.condition(row).band}` : '';
+      title.textContent = `${dateLabel(row.observed_at)} · ${row.score}점${shown} · ${row.confidence || '품질 정보 없음'}`;
       point.append(title);
       svg.append(point);
     });
     root.append(svg);
-    $('peak-label').textContent = `${highest.algorithm_version} · 이 버전 최대 ${highest.score}점 · ${dateLabel(highest.observed_at)}`;
+    $('peak-label').textContent = `${highest.algorithm_version} · 이 버전 최대 ${highest.score}점` +
+      (A.isDeduction(highest.algorithm_version) ? ` (눈 컨디션 ${A.condition(highest).value}점 ${A.condition(highest).band})` : '') +
+      ` · ${dateLabel(highest.observed_at)}`;
   }
   function drawDistance(rows) {
     const root = $('distance-timeline'); root.replaceChildren();
@@ -228,7 +231,9 @@
       const fill = document.createElement('div'); fill.style.width = `${item.score ?? 0}%`;
       track.append(fill); line.append(heading, track); root.append(line);
     }
-    $('contribution-note').textContent = last.algorithm_version === 'efs-exposure-0.11'
+    $('contribution-note').textContent = A.isDeduction(last.algorithm_version)
+      ? `${dateLabel(last.observed_at)} 관측 기준. ${last.algorithm_version} 점수는 오늘 누적 감점(100 − 눈 컨디션)입니다. 요인별 감점은 휴대폰에만 저장되며, 아래는 같은 구간에 함께 기록한 0.11 영역 지표입니다.`
+      : last.algorithm_version === 'efs-exposure-0.11'
       ? `${dateLabel(last.observed_at)} 관측 기준. 저장 점수는 현재 유효 입력의 고정 가중 기여도입니다. 빠진 영역을 0으로 채우거나 나머지 영역을 100%로 늘리지 않았습니다. 오늘 누적 부담은 별도 로컬 지표로 서버에 저장되지 않습니다.`
       : last.algorithm_version === 'efs-exposure-0.10'
       ? `${dateLabel(last.observed_at)} 관측 기준. 영역의 분당 부담률 중 관측된 부분만 가상 재구성했습니다. 하루 누적 관측 시간·교호작용의 전체 적분은 서버에 없어 저장 점수를 역산할 수 없습니다. 결측은 낮은 부담이 아닙니다.`
@@ -248,14 +253,16 @@
     root.append(textNode('p', `알고리즘 버전: ${[...versions].map(([name, n]) => `${name} ${n}건`).join(' · ')}`));
     root.append(textNode('p', `신뢰도: ${[...confidence].map(([name, n]) => `${name} ${n}건`).join(' · ')}`));
     root.append(textNode('p', `영역 점수 결측 ${missing}개 · 추정 표시 필드 ${estimated}개 (관측 전체 기준)`));
-    root.append(textNode('p', `비교 가능한 점수 ${rows.filter(A.comparableScore).length}개 · 저장 점수 ${rows.filter(row => A.isScore(row.score)).length}개. 0.10은 화면·사용과 추가 영역 근거가 있는 저장 점수만, 0.7/0.5는 당시 가용 비중 30% 이상만 비교에 사용합니다. 시계열은 최신 한 산식 버전만 연결합니다.`));
+    root.append(textNode('p', `비교 가능한 점수 ${rows.filter(A.comparableScore).length}개 · 저장 점수 ${rows.filter(row => A.isScore(row.score)).length}개. 감점 모델(0.14·0.15)은 앱이 '보통' 신뢰도로 표시한 보고서만, 0.11은 영역 90% 이상, 0.10은 화면·사용과 추가 영역 근거가 있는 저장 점수만, 0.7/0.5는 당시 가용 비중 30% 이상만 비교에 사용합니다. 시계열은 최신 한 산식 버전만 연결합니다.`));
   }
   function renderTable(rows, responses) {
     const body = $('observations-body'); body.replaceChildren();
     for (const row of [...rows].reverse().slice(0, 100)) {
       const tr = document.createElement('tr');
       const personal = A.personalized(row, rows, responses);
+      const cond = A.condition(row);
       for (const value of [dateLabel(row.observed_at), A.isScore(row.score) ? `${row.score}/100${A.comparableScore(row) ? '' : ' · 근거 부족'}` : '결측',
+        cond && A.isDeduction(row.algorithm_version) ? `${cond.value}/100 · ${cond.band}` : cond ? `${cond.value}/100` : '결측',
         !showPersonal ? '표시 끔 · 원점수 유지' : personal.score === null
           ? `대기 (${personal.samples}/5)` : `${personal.score}/100 · 이전 ${personal.samples}개`,
         Number.isInteger(row.subjective_fatigue_nrs) ? `${row.subjective_fatigue_nrs}/10${row.subjective_source === 'response' ? ' · 최신' : ' · 이전 방식'}` : '미응답',
