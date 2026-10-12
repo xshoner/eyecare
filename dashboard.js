@@ -228,7 +228,9 @@
       const fill = document.createElement('div'); fill.style.width = `${item.score ?? 0}%`;
       track.append(fill); line.append(heading, track); root.append(line);
     }
-    $('contribution-note').textContent = last.algorithm_version === 'efs-exposure-0.10'
+    $('contribution-note').textContent = last.algorithm_version === 'efs-exposure-0.11'
+      ? `${dateLabel(last.observed_at)} 관측 기준. 저장 점수는 현재 유효 입력의 고정 가중 기여도입니다. 빠진 영역을 0으로 채우거나 나머지 영역을 100%로 늘리지 않았습니다. 오늘 누적 부담은 별도 로컬 지표로 서버에 저장되지 않습니다.`
+      : last.algorithm_version === 'efs-exposure-0.10'
       ? `${dateLabel(last.observed_at)} 관측 기준. 영역의 분당 부담률 중 관측된 부분만 가상 재구성했습니다. 하루 누적 관측 시간·교호작용의 전체 적분은 서버에 없어 저장 점수를 역산할 수 없습니다. 결측은 낮은 부담이 아닙니다.`
       : `${dateLabel(last.observed_at)} 관측 기준. ${last.algorithm_version}의 품질 가중 평균을 가상 재구성했습니다. 과거 원점수·버전은 변경하지 않습니다.`;
   }

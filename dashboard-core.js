@@ -16,7 +16,7 @@
   const isNrs = value => Number.isInteger(value) && value >= 0 && value <= 10;
   const finite = (value, low, high) => typeof value === 'number' && Number.isFinite(value) &&
     value >= low && value <= high;
-  const scoreWeights = version => ['efs-hypothesis-0.7', 'efs-exposure-0.10'].includes(version) ? [26, 22, 8, 18, 26]
+  const scoreWeights = version => ['efs-hypothesis-0.7', 'efs-exposure-0.10', 'efs-exposure-0.11'].includes(version) ? [26, 22, 8, 18, 26]
     : version === 'efs-hypothesis-0.5' ? [20, 10, 15, 20, 35] : null;
 
   // Mirrors the app's >=30% available-weight gate. Older rows with no quality evidence
@@ -30,6 +30,14 @@
       return ['partial', 'adequate'].includes(row.confidence) &&
         isScore(row.screen_score) && isScore(row.usage_score) &&
         (isScore(row.environment_score) || isScore(row.eyes_score));
+    }
+    if (row.algorithm_version === 'efs-exposure-0.11') {
+      // A partial number remains visible in the table. Correlations use only
+      // adequately observed rows with at least 90% of nominal domains present.
+      const present = domains.reduce((sum, domain, i) => sum +
+        (isScore(row[`${domain.id}_score`]) && finite(row[`${domain.id}_quality`], 0, 1) &&
+          row[`${domain.id}_quality`] > 0 ? weights[i] : 0), 0);
+      return row.confidence === 'adequate' && present >= 90;
     }
     const available = domains.reduce((sum, domain, i) => {
       const quality = row[`${domain.id}_quality`];
@@ -152,7 +160,7 @@
   }
 
   function contributions(row) {
-    const cumulative = row.algorithm_version === 'efs-exposure-0.10';
+    const exposure = ['efs-exposure-0.10', 'efs-exposure-0.11'].includes(row.algorithm_version);
     const historical = row.algorithm_version === 'efs-hypothesis-0.5';
     const old = [20, 10, 15, 20, 35];
     const observed = domains.map((domain, index) => {
@@ -165,9 +173,9 @@
     });
     const total = observed.reduce((sum, item) => sum + item.effectiveWeight, 0);
     return observed.map(item => ({ ...item,
-      reconstructedPoints: item.score === null || total === 0 ? null : cumulative
+      reconstructedPoints: item.score === null || total === 0 ? null : exposure
         ? item.weight * item.score / 100 : item.effectiveWeight / total * item.score,
-      kind: cumulative ? 'rate' : 'historical_mean'
+      kind: exposure ? 'rate' : 'historical_mean'
     }));
   }
 

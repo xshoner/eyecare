@@ -142,3 +142,20 @@ test('new exposure version keeps partial missingness and reports rate rather tha
   assert.deepEqual(A.newestVersionRows([old, row]), [row]);
   assert.deepEqual(A.newestVersionRows([row, old]), [row]);
 });
+
+test('0.11 retains a one-domain partial score but excludes it from paired trend analysis', () => {
+  const partial = { algorithm_version: 'efs-exposure-0.11', score: 11,
+    confidence: 'partial', usage_score: 60, usage_quality: 1,
+    screen_score: null, screen_quality: null, environment_score: null,
+    environment_quality: null, posture_score: null, posture_quality: null,
+    eyes_score: null, eyes_quality: null };
+  assert.equal(A.comparableScore(partial), false);
+  const parts = A.contributions(partial);
+  assert.equal(parts.find(p => p.id === 'usage').reconstructedPoints, 10.8);
+  assert.equal(parts.find(p => p.id === 'screen').reconstructedPoints, null);
+  assert.equal(parts[0].kind, 'rate');
+  const adequate = { ...partial, confidence: 'adequate', score: 43,
+    screen_score: 70, screen_quality: .8, environment_score: 20,
+    environment_quality: .6, eyes_score: 30, eyes_quality: .6 };
+  assert.equal(A.comparableScore(adequate), true);
+});

@@ -84,7 +84,7 @@
         td.colSpan = 6; tr.append(td); body.append(tr);
       }
       table.append(body); wrapped.append(table); summary.append(wrapped);
-      summary.append(node('p', 'algo-fine', '0.10 앱 점수는 관측 시간에 누적한 값으로, 서버 영역 평균만으로 복원할 수 없습니다. 과거 평균 가상값도 0.7/0.5의 완전한 복원이 아닙니다. 가상값은 앱 점수나 DB 행을 변경하지 않습니다.'));
+      summary.append(node('p', 'algo-fine', '0.11 점수는 현재 확인된 영역의 고정 비중 기여도이고, 0.10 점수는 관측 시간의 누적값입니다. 이 편집기는 어느 버전의 원점수도 복원하지 않습니다. 가상값은 앱 점수나 DB 행을 변경하지 않습니다.'));
       const pairs = sample.filter(row => isScore(row.score) && isNrs(row.subjective_fatigue_nrs)).length;
       summary.append(node('p', 'algo-fine', `점수와 NRS가 함께 있는 최근 표본: ${pairs}건. 이 수치로 가중치를 학습하거나 성능을 주장하지 않습니다.`));
       results.append(summary);
