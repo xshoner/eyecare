@@ -159,3 +159,35 @@ test('0.11 retains a one-domain partial score but excludes it from paired trend 
     environment_quality: .6, eyes_score: 30, eyes_quality: .6 };
   assert.equal(A.comparableScore(adequate), true);
 });
+
+test('observation CSV keeps stored columns, adds condition and every NRS answer, never fills missing as zero', () => {
+  const rows = [
+    { id: 'o2', report_id: 'r2', observed_at: '2026-10-12T02:00:00Z', algorithm_version: 'efs-exposure-0.11',
+      score: null, confidence: 'unavailable', screen_score: null },
+    { id: 'o1', report_id: 'r1', observed_at: '2026-10-12T01:00:00Z', algorithm_version: 'synthetic-test-0.5.4',
+      score: 30, confidence: 'partial, "test"', screen_score: 40 }
+  ];
+  const responses = [
+    { id: 'b', report_id: 'r1', subjective_fatigue_nrs: 7, answered_at: '2026-10-12T01:10:00Z', received_at: '2026-10-12T01:11:00Z' },
+    { id: 'a', report_id: 'r1', subjective_fatigue_nrs: 4, answered_at: '2026-10-12T01:05:00Z', received_at: '2026-10-12T01:06:00Z' }
+  ];
+  const lines = A.observationsCsv(rows, responses).trimEnd().split('\r\n');
+  const header = lines[0].split(',');
+  assert.equal(lines.length, 3);
+  assert.ok(lines[1].startsWith('o1,r1,'));
+  assert.ok(lines[1].includes('"partial, ""test"""'));
+  assert.deepEqual(lines[1].split(',').slice(-8), ['70', 'false', 'true', '2', '4', '2026-10-12T01:05:00Z', '7', '2026-10-12T01:11:00Z']);
+  assert.deepEqual(lines[2].split(',').slice(-8), ['', 'false', 'false', '0', '', '', '', '']);
+  assert.equal(lines[2].split(',')[header.indexOf('score')], '');
+});
+
+test('response CSV lists every revision in receipt order', () => {
+  const csv = A.responsesCsv([
+    { id: 'b', report_id: 'r1', subjective_fatigue_nrs: 7, answered_at: 't2', received_at: '2026-10-12T01:11:00Z', previous_response_id: 'a' },
+    { id: 'a', report_id: 'r1', subjective_fatigue_nrs: 4, answered_at: 't1', received_at: '2026-10-12T01:06:00Z', previous_response_id: null }
+  ]);
+  const lines = csv.trimEnd().split('\r\n');
+  assert.equal(lines[0], 'id,report_id,subjective_fatigue_nrs,answered_at,received_at,previous_response_id');
+  assert.equal(lines[1], 'a,r1,4,t1,2026-10-12T01:06:00Z,');
+  assert.equal(lines[2], 'b,r1,7,t2,2026-10-12T01:11:00Z,a');
+});

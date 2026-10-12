@@ -381,6 +381,22 @@
     if (lastRendered) renderData(lastRendered.allRows, lastRendered.responses, lastRendered.expiresAt);
   });
   $('refresh-data').addEventListener('click', sync);
+  function download(name, text) {
+    // The BOM lets spreadsheet apps read Korean text as UTF-8. Nothing is uploaded.
+    const url = URL.createObjectURL(new Blob(['\uFEFF', text], { type: 'text/csv;charset=utf-8' }));
+    const link = document.createElement('a');
+    link.href = url; link.download = name; document.body.append(link); link.click(); link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+  const stamp = () => new Date().toISOString().slice(0, 10).replace(/-/g, '');
+  $('export-observations').addEventListener('click', () => {
+    if (!lastRendered) return;
+    download(`eyecare-observations-${stamp()}.csv`, A.observationsCsv(lastRendered.allRows, lastRendered.responses));
+  });
+  $('export-responses').addEventListener('click', () => {
+    if (!lastRendered) return;
+    download(`eyecare-nrs-responses-${stamp()}.csv`, A.responsesCsv(lastRendered.responses));
+  });
   window.addEventListener('online', sync);
   window.addEventListener('storage', event => { if (event.key === window.EyeCareBrowserSession.AUTH_KEY) sync(); });
   document.addEventListener('visibilitychange', () => { if (!document.hidden) sync(); });

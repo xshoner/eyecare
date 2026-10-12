@@ -191,6 +191,45 @@
     return version ? dated.filter(row => row.algorithm_version === version) : [];
   }
 
+  // CSV for offline validation. The stored `score` stays the burden score (higher = more burden);
+  // `condition_score` is the phone's 0.12 display value. Empty cells are unobserved, never zero.
+  const csvCell = value => {
+    const text = value === null || value === undefined ? ''
+      : typeof value === 'number' ? (Number.isFinite(value) ? String(value) : '') : String(value);
+    return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+  };
+  const csvText = (columns, rows) => [columns, ...rows.map(row => columns.map(column => row[column]))]
+    .map(line => line.map(csvCell).join(',')).join('\r\n') + '\r\n';
+  const RESPONSE_COLUMNS = ['id', 'report_id', 'subjective_fatigue_nrs', 'answered_at', 'received_at', 'previous_response_id'];
+
+  function observationsCsv(rows, responses) {
+    const byReport = new Map();
+    for (const answer of responses) {
+      if (!isNrs(answer.subjective_fatigue_nrs)) continue;
+      const list = byReport.get(answer.report_id) || [];
+      list.push(answer); byReport.set(answer.report_id, list);
+    }
+    const stored = [...new Set(rows.flatMap(row => Object.keys(row)))]
+      .filter(key => !['subjective_source', 'subjective_response_id'].includes(key));
+    const columns = [...stored, 'condition_score', 'comparable', 'synthetic',
+      'nrs_response_count', 'nrs_first', 'nrs_first_answered_at', 'nrs_latest', 'nrs_latest_received_at'];
+    const ordered = [...rows].sort((a, b) => String(a.observed_at).localeCompare(String(b.observed_at)));
+    return csvText(columns, ordered.map(row => {
+      const answers = byReport.get(row.report_id) || [];
+      const first = [...answers].sort((a, b) => String(a.answered_at).localeCompare(String(b.answered_at)) || String(a.id).localeCompare(String(b.id)))[0];
+      const latest = [...answers].sort((a, b) => String(b.received_at).localeCompare(String(a.received_at)) || String(b.id).localeCompare(String(a.id)))[0];
+      return { ...row, condition_score: isScore(row.score) ? 100 - row.score : null,
+        comparable: comparableScore(row), synthetic: isSynthetic(row), nrs_response_count: answers.length,
+        nrs_first: first?.subjective_fatigue_nrs, nrs_first_answered_at: first?.answered_at,
+        nrs_latest: latest?.subjective_fatigue_nrs, nrs_latest_received_at: latest?.received_at };
+    }));
+  }
+
+  function responsesCsv(responses) {
+    return csvText(RESPONSE_COLUMNS, [...responses].sort((a, b) =>
+      String(a.received_at).localeCompare(String(b.received_at)) || String(a.id).localeCompare(String(b.id))));
+  }
+
   function grantState(previous, grant, now = Date.now()) {
     if (grant && !grant.revoked_at && Date.parse(grant.expires_at) > now) return 'linked';
     if (previous && Date.parse(previous.expires_at) <= now) return 'expired';
@@ -200,5 +239,5 @@
 
   return { domains, isSynthetic, partition, paired, attachResponses, personalized, validation,
     contributions, peak, newestVersionRows, grantState,
-    isScore, comparableScore, distanceSummary };
+    isScore, comparableScore, distanceSummary, observationsCsv, responsesCsv };
 });
